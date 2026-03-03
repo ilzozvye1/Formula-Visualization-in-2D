@@ -1,0 +1,47 @@
+﻿[
+    {
+        "BuildNumber":  1,
+        "StartTime":  "2026-03-03 22:35:56",
+        "EndTime":  "2026-03-03 22:35:56",
+        "Duration":  "00:00",
+        "Success":  true,
+        "BuildDir":  "v1.0.0_20260303_223556",
+        "Files":  "index.html, script.js, styles.css"
+    },
+    {
+        "BuildNumber":  2,
+        "StartTime":  "2026-03-03 22:38:58",
+        "EndTime":  "2026-03-03 22:38:58",
+        "Duration":  "00:00",
+        "Success":  true,
+        "BuildDir":  "v1.0.0_20260303_223858",
+        "Files":  "index.html, script.js, styles.css"
+    },
+    {
+        "BuildNumber":  3,
+        "StartTime":  "2026-03-03 22:42:00",
+        "EndTime":  "2026-03-03 22:42:00",
+        "Duration":  "00:00",
+        "Success":  true,
+        "BuildDir":  "v1.0.0_20260303_224200",
+        "Files":  "index.html, script.js, styles.css"
+    },
+    {
+        "BuildNumber":  4,
+        "StartTime":  "2026-03-03 22:45:02",
+        "EndTime":  "2026-03-03 22:45:02",
+        "Duration":  "00:00",
+        "Success":  true,
+        "BuildDir":  "v1.0.0_20260303_224502",
+        "Files":  "index.html, script.js, styles.css"
+    },
+    {
+        "BuildNumber":  5,
+        "StartTime":  "2026-03-03 22:48:04",
+        "EndTime":  "2026-03-03 22:48:05",
+        "Duration":  "00:00",
+        "Success":  true,
+        "BuildDir":  "v1.0.0_20260303_224804",
+        "Files":  "index.html, script.js, styles.css"
+    }
+]
