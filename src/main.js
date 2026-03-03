@@ -26,7 +26,7 @@ function createWindow() {
     });
 
     // 加载应用
-    mainWindow.loadFile('index.html');
+    mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
     // 加载完成后显示窗口
     mainWindow.once('ready-to-show', () => {

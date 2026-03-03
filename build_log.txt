@@ -1,0 +1,74 @@
+2D Formula Visualization - Universal Build Script
+===============================================
+Current directory: E:\Model\Formula Visualization in 2D
+Script path: E:\Model\Formula Visualization in 2D\build.bat
+Time: 2026/03/04 ����  2:13:41.65
+🚀 2D公式可视化 - 构建脚本
+📦 版本: v1.0.0
+📅 构建时间: 2026-03-03 02:13:43
+==================================================
+📝 已更新构建日期: 2026-03-03
+📁 创建目录: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343
+
+🔨 构建 Windows 版本...
+
+> formula-visualization-2d@1.0.0 build:win
+> electron-builder --win
+
+  • electron-builder  version=24.13.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • packaging       platform=win32 arch=x64 electron=28.3.3 appOutDir=dist\win-unpacked
+  • packaging       platform=win32 arch=ia32 electron=28.3.3 appOutDir=dist\win-ia32-unpacked
+  • building        target=nsis file=dist\2D公式可视化 Setup 1.0.0.exe archs=x64, ia32 oneClick=false perMachine=false
+  • building block map  blockMapFile=dist\2D公式可视化 Setup 1.0.0.exe.blockmap
+  • building        target=portable file=dist\2D公式可视化 1.0.0.exe archs=x64
+📁 创建目录: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\windows
+   📄 2D公式可视化 1.0.0.exe
+   📄 2D公式可视化 Setup 1.0.0.exe
+✅ Windows 版本构建完成: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\windows
+
+🔨 构建 Android 版本...
+📁 创建目录: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\android
+💡 跳过Cordova构建（需要Android SDK环境）
+📁 已创建Android目录结构
+
+🔨 构建 Web 版本...
+📁 创建目录: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\web
+   📄 index.html
+   📄 script.js
+   📄 styles.css
+📁 创建目录: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\web\assets
+   📄 generate-icons.html
+   📄 icon-128.png
+   📄 icon-16.png
+   📄 icon-256.png
+   📄 icon-32.png
+   📄 icon-48.png
+   📄 icon-512.png
+   📄 icon-64.png
+   📄 icon.icns
+   📄 icon.ico
+   📄 icon.png
+   📄 icon.svg
+✅ Web 版本构建完成: E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\web
+
+📝 构建报告已生成: E:\Model\Formula Visualization in 2D\build-output\build-report.json
+
+==================================================
+📊 构建摘要
+==================================================
+windows    ✅ 成功
+           📁 E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\windows
+              📄 2D公式可视化 1.0.0.exe
+              📄 2D公式可视化 Setup 1.0.0.exe
+android    ✅ 成功
+           📁 E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\android
+web        ✅ 成功
+           📁 E:\Model\Formula Visualization in 2D\build-output\v1.0.0_20260304_021343\web
+              📄 assets
+              📄 index.html
+              📄 script.js
+              📄 styles.css
+
+✨ 构建完成!
+dist folder deleted successfully

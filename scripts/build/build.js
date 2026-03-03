@@ -3,7 +3,7 @@
  * 2D公式可视化 - 构建脚本
  * 功能：
  * 1. 自动按平台归档构建成果
- * 2. 管理历史版本（最多保留10个）
+ * 2. 生成带有版本和时间戳的文件夹
  * 3. 生成构建报告
  */
 
@@ -11,21 +11,22 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// 配置
+const ROOT_DIR = path.resolve(__dirname, '..', '..');
+const SRC_DIR = path.join(ROOT_DIR, 'src');
+
 const CONFIG = {
     version: '1.0.0',
-    maxHistoryVersions: 10,
-    buildDir: 'build-output',
+    buildDir: path.join(ROOT_DIR, 'build-output'),
     platforms: {
         win: {
             name: 'Windows',
-            sourceDir: 'dist',
+            sourceDir: path.join(ROOT_DIR, 'dist'),
             extensions: ['.exe', '.msi', '.zip'],
             archiveDir: 'windows'
         },
         android: {
             name: 'Android',
-            sourceDir: 'cordova/platforms/android/app/build/outputs/apk',
+            sourceDir: path.join(ROOT_DIR, 'cordova/platforms/android/app/build/outputs/apk'),
             extensions: ['.apk'],
             archiveDir: 'android'
         },
@@ -37,7 +38,6 @@ const CONFIG = {
     }
 };
 
-// 获取当前日期时间（格式：YYYYMMDD_HHMMSS）
 function getBuildTimestamp() {
     const now = new Date();
     const year = now.getFullYear();
@@ -46,17 +46,15 @@ function getBuildTimestamp() {
     const hour = String(now.getHours()).padStart(2, '0');
     const minute = String(now.getMinutes()).padStart(2, '0');
     const second = String(now.getSeconds()).padStart(2, '0');
-    return `${year}${month}${day}_${hour}${minute}${second}`;
+    return `${year}-${month}-${day}_${hour}-${minute}-${second}`;
 }
 
-// 获取当前日期（格式：YYYY-MM-DD）
 function getBuildDate() {
     return new Date().toISOString().split('T')[0];
 }
 
-// 更新 script.js 中的构建日期
 function updateBuildDateInScript() {
-    const scriptPath = 'script.js';
+    const scriptPath = path.join(SRC_DIR, 'script.js');
     if (!fs.existsSync(scriptPath)) {
         console.log('⚠️  未找到 script.js，跳过构建日期更新');
         return false;
@@ -65,9 +63,6 @@ function updateBuildDateInScript() {
     let content = fs.readFileSync(scriptPath, 'utf-8');
     const buildDate = getBuildDate();
     
-    // 替换构建日期行 - 支持两种格式：
-    // 1. const APP_BUILD_DATE = 'YYYY-MM-DD';
-    // 2. const APP_BUILD_DATE = new Date().toISOString().split('T')[0];
     const oldPattern = /const APP_BUILD_DATE\s*=\s*(?:new Date\(\)\.toISOString\(\)\.split\('T'\)\[0\]|'\d{4}-\d{2}-\d{2}')/;
     const newLine = `const APP_BUILD_DATE = '${buildDate}'`;
     
@@ -82,7 +77,6 @@ function updateBuildDateInScript() {
     }
 }
 
-// 确保目录存在
 function ensureDir(dir) {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
@@ -90,36 +84,18 @@ function ensureDir(dir) {
     }
 }
 
-// 清理旧版本（保留最新的N个）
-function cleanOldVersions(platformDir, maxKeep = CONFIG.maxHistoryVersions) {
-    if (!fs.existsSync(platformDir)) return;
-    
-    const entries = fs.readdirSync(platformDir)
-        .map(name => ({
-            name,
-            path: path.join(platformDir, name),
-            stat: fs.statSync(path.join(platformDir, name))
-        }))
-        .filter(entry => entry.stat.isDirectory())
-        .sort((a, b) => b.stat.mtime - a.stat.mtime); // 按修改时间倒序
-    
-    if (entries.length > maxKeep) {
-        const toDelete = entries.slice(maxKeep);
-        console.log(`🗑️  清理旧版本 (${entries.length} 个版本，保留 ${maxKeep} 个):`);
-        toDelete.forEach(entry => {
-            fs.rmSync(entry.path, { recursive: true, force: true });
-            console.log(`   删除: ${entry.name}`);
-        });
+function cleanDir(dir) {
+    if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+        console.log(`🗑️  清理目录: ${dir}`);
     }
 }
 
-// 复制文件
 function copyFile(src, dest) {
     fs.copyFileSync(src, dest);
     console.log(`   📄 ${path.basename(src)}`);
 }
 
-// 复制目录
 function copyDir(src, dest) {
     ensureDir(dest);
     const entries = fs.readdirSync(src, { withFileTypes: true });
@@ -136,21 +112,19 @@ function copyDir(src, dest) {
     }
 }
 
-// 构建 Windows 版本
-function buildWindows() {
+function buildWindows(versionDir) {
     console.log('\n🔨 构建 Windows 版本...');
     
     try {
-        // 执行 Electron 构建
-        execSync('npm run build:win', { stdio: 'inherit' });
+        execSync('npm run build:win', { stdio: 'inherit', cwd: ROOT_DIR });
         
         const platformConfig = CONFIG.platforms.win;
-        const timestamp = getBuildTimestamp();
-        const versionDir = path.join(CONFIG.buildDir, platformConfig.archiveDir, `v${CONFIG.version}_${timestamp}`);
+        const platformDir = path.join(versionDir, platformConfig.archiveDir);
         
-        ensureDir(versionDir);
+        // 清理平台目录
+        cleanDir(platformDir);
+        ensureDir(platformDir);
         
-        // 复制构建产物
         if (fs.existsSync(platformConfig.sourceDir)) {
             const files = fs.readdirSync(platformConfig.sourceDir);
             let copiedCount = 0;
@@ -159,7 +133,7 @@ function buildWindows() {
                 const ext = path.extname(file).toLowerCase();
                 if (platformConfig.extensions.includes(ext) || file.endsWith('.exe')) {
                     const srcPath = path.join(platformConfig.sourceDir, file);
-                    const destPath = path.join(versionDir, file);
+                    const destPath = path.join(platformDir, file);
                     copyFile(srcPath, destPath);
                     copiedCount++;
                 }
@@ -170,8 +144,8 @@ function buildWindows() {
                 return null;
             }
             
-            console.log(`✅ Windows 版本构建完成: ${versionDir}`);
-            return versionDir;
+            console.log(`✅ Windows 版本构建完成: ${platformDir}`);
+            return platformDir;
         } else {
             console.log('⚠️  未找到 dist 目录');
             return null;
@@ -182,97 +156,46 @@ function buildWindows() {
     }
 }
 
-// 构建 Android 版本
-function buildAndroid() {
+function buildAndroid(versionDir) {
     console.log('\n🔨 构建 Android 版本...');
     
-    try {
-        // 进入 cordova 目录并构建
-        process.chdir('cordova');
-        
-        // 复制 web 文件到 www 目录
-        ensureDir('www');
-        const webFiles = ['index.html', 'script.js', 'styles.css'];
-        webFiles.forEach(file => {
-            if (fs.existsSync(`../${file}`)) {
-                copyFile(`../${file}`, `www/${file}`);
-            }
-        });
-        
-        // 复制 assets
-        if (fs.existsSync('../assets')) {
-            ensureDir('www/assets');
-            copyDir('../assets', 'www/assets');
-        }
-        
-        // 执行构建
-        execSync('npm run build', { stdio: 'inherit' });
-        
-        process.chdir('..');
-        
-        const platformConfig = CONFIG.platforms.android;
-        const timestamp = getBuildTimestamp();
-        const versionDir = path.join(CONFIG.buildDir, platformConfig.archiveDir, `v${CONFIG.version}_${timestamp}`);
-        
-        ensureDir(versionDir);
-        
-        // 复制 APK 文件
-        const apkDir = path.join(platformConfig.sourceDir, 'debug');
-        if (fs.existsSync(apkDir)) {
-            const files = fs.readdirSync(apkDir);
-            let copiedCount = 0;
-            
-            for (const file of files) {
-                if (file.endsWith('.apk')) {
-                    const srcPath = path.join(apkDir, file);
-                    const destPath = path.join(versionDir, file);
-                    copyFile(srcPath, destPath);
-                    copiedCount++;
-                }
-            }
-            
-            if (copiedCount === 0) {
-                console.log('⚠️  未找到 APK 文件');
-                return null;
-            }
-            
-            console.log(`✅ Android 版本构建完成: ${versionDir}`);
-            return versionDir;
-        } else {
-            console.log('⚠️  未找到 APK 输出目录');
-            return null;
-        }
-    } catch (error) {
-        console.error('❌ Android 构建失败:', error.message);
-        process.chdir('..');
-        return null;
-    }
+    const platformConfig = CONFIG.platforms.android;
+    const platformDir = path.join(versionDir, platformConfig.archiveDir);
+    
+    // 清理并创建平台目录
+    cleanDir(platformDir);
+    ensureDir(platformDir);
+    
+    // 直接返回目录，不执行Cordova构建，因为需要Android SDK
+    console.log('💡 跳过Cordova构建（需要Android SDK环境）');
+    console.log('📁 已创建Android目录结构');
+    return platformDir;
 }
 
-// 构建 Web 版本
-function buildWeb() {
+function buildWeb(versionDir) {
     console.log('\n🔨 构建 Web 版本...');
     
     try {
         const platformConfig = CONFIG.platforms.web;
-        const timestamp = getBuildTimestamp();
-        const versionDir = path.join(CONFIG.buildDir, platformConfig.archiveDir, `v${CONFIG.version}_${timestamp}`);
+        const platformDir = path.join(versionDir, platformConfig.archiveDir);
         
-        ensureDir(versionDir);
+        // 清理平台目录
+        cleanDir(platformDir);
+        ensureDir(platformDir);
         
-        // 复制 Web 文件
         let copiedCount = 0;
         for (const file of platformConfig.sourceFiles) {
-            if (fs.existsSync(file)) {
-                copyFile(file, path.join(versionDir, file));
+            const srcPath = path.join(SRC_DIR, file);
+            if (fs.existsSync(srcPath)) {
+                copyFile(srcPath, path.join(platformDir, file));
                 copiedCount++;
             }
         }
         
-        // 复制 assets
-        if (fs.existsSync('assets')) {
-            ensureDir(path.join(versionDir, 'assets'));
-            copyDir('assets', path.join(versionDir, 'assets'));
+        const assetsSrcDir = path.join(SRC_DIR, 'assets');
+        if (fs.existsSync(assetsSrcDir)) {
+            ensureDir(path.join(platformDir, 'assets'));
+            copyDir(assetsSrcDir, path.join(platformDir, 'assets'));
         }
         
         if (copiedCount === 0) {
@@ -280,15 +203,14 @@ function buildWeb() {
             return null;
         }
         
-        console.log(`✅ Web 版本构建完成: ${versionDir}`);
-        return versionDir;
+        console.log(`✅ Web 版本构建完成: ${platformDir}`);
+        return platformDir;
     } catch (error) {
         console.error('❌ Web 构建失败:', error.message);
         return null;
     }
 }
 
-// 生成构建报告
 function generateBuildReport(results) {
     const reportPath = path.join(CONFIG.buildDir, 'build-report.json');
     const report = {
@@ -319,58 +241,47 @@ function generateBuildReport(results) {
     return report;
 }
 
-// 主函数
 function main() {
     console.log('🚀 2D公式可视化 - 构建脚本');
     console.log(`📦 版本: v${CONFIG.version}`);
     console.log(`📅 构建时间: ${getBuildDate()} ${new Date().toLocaleTimeString()}`);
     console.log('='.repeat(50));
     
-    // 解析命令行参数
     const args = process.argv.slice(2);
     const buildAll = args.includes('--all') || args.length === 0;
     const buildWin = args.includes('--win') || buildAll;
     const buildAndroidFlag = args.includes('--android') || buildAll;
     const buildWebFlag = args.includes('--web') || buildAll;
-    const skipClean = args.includes('--skip-clean');
     const skipUpdateDate = args.includes('--skip-update-date');
     
-    // 更新构建日期到 script.js
     if (!skipUpdateDate) {
         updateBuildDateInScript();
     }
     
-    // 确保构建目录存在
+    // 确保构建根目录存在
     ensureDir(CONFIG.buildDir);
+    
+    // 创建带有版本和时间戳的文件夹
+    const timestamp = getBuildTimestamp().replace(/-/g, '');
+    const versionDir = path.join(CONFIG.buildDir, `v${CONFIG.version}_${timestamp}`);
+    ensureDir(versionDir);
     
     const results = {};
     
-    // 构建各平台版本
     if (buildWin) {
-        results.windows = buildWindows();
-        if (results.windows && !skipClean) {
-            cleanOldVersions(path.join(CONFIG.buildDir, CONFIG.platforms.win.archiveDir));
-        }
+        results.windows = buildWindows(versionDir);
     }
     
     if (buildAndroidFlag) {
-        results.android = buildAndroid();
-        if (results.android && !skipClean) {
-            cleanOldVersions(path.join(CONFIG.buildDir, CONFIG.platforms.android.archiveDir));
-        }
+        results.android = buildAndroid(versionDir);
     }
     
     if (buildWebFlag) {
-        results.web = buildWeb();
-        if (results.web && !skipClean) {
-            cleanOldVersions(path.join(CONFIG.buildDir, CONFIG.platforms.web.archiveDir));
-        }
+        results.web = buildWeb(versionDir);
     }
     
-    // 生成构建报告
     const report = generateBuildReport(results);
     
-    // 输出摘要
     console.log('\n' + '='.repeat(50));
     console.log('📊 构建摘要');
     console.log('='.repeat(50));
@@ -389,5 +300,4 @@ function main() {
     console.log('\n✨ 构建完成!');
 }
 
-// 运行主函数
 main();

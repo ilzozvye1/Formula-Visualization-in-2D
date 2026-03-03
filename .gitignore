@@ -6,3 +6,11 @@ dist/
 Thumbs.db
 .env
 *.exe
+
+# Cordova files
+cordova/platforms/
+cordova/plugins/
+cordova/package-lock.json
+
+# Build artifacts
+build-test-report*.json
