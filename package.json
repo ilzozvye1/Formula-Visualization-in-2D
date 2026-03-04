@@ -1,6 +1,6 @@
 {
   "name": "formula-visualization-2d",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "2D公式可视化工具 - 支持多种方程类型的可视化",
   "main": "src/main.js",
   "scripts": {

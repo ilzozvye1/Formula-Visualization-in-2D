@@ -1,8 +1,8 @@
 // 版本号
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const APP_NAME = '2D公式可视化';
 // 构建日期动态生成（格式：YYYY-MM-DD）
-const APP_BUILD_DATE = '2026-03-03';
+const APP_BUILD_DATE = '2026-03-04';
 
 // 全局变量
 let canvas, ctx;
@@ -23,6 +23,25 @@ let dragStartX, dragStartY;
 let showIntersections = true;
 let intersectionColor = '#ff00ff';
 let intersectionSize = 6;
+
+// 3D模式相关变量
+let is3DMode = false;
+let rotationX = 0.5; // X轴旋转角度（弧度）
+let rotationY = 0.5; // Y轴旋转角度（弧度）
+let rotationZ = 0;   // Z轴旋转角度（弧度）
+let isRotating = false;
+let lastMouseX, lastMouseY;
+let zScale = 20; // Z轴缩放比例
+
+// 自动旋转相关变量
+let isAutoRotating = false;
+let autoRotateAnimationId = null;
+let autoRotateSpeed = 0.005;
+
+// 深度雾化相关变量
+let fogEnabled = false;
+let fogDensity = 0.02;
+let fogColor = darkMode ? '#1a1a1a' : '#ffffff';
 
 // 根据缩放级别确定小数位数
 function getDecimalPlaces(scale) {
@@ -228,22 +247,32 @@ function handleKeyDown(e) {
 
 // 绘制坐标系
 function drawCoordinateSystem() {
+    if (is3DMode) {
+        draw3DCoordinateSystem();
+    } else {
+        draw2DCoordinateSystem();
+    }
+    updateLegend();
+}
+
+// 绘制2D坐标系
+function draw2DCoordinateSystem() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // 设置背景色
     if (darkMode) {
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-    
+
     if (showGrid) {
         // 确定网格间距
         let gridSpacing = Math.max(20, scale);
-        
+
         // 绘制网格
         ctx.strokeStyle = darkMode ? '#333' : '#e0e0e0';
         ctx.lineWidth = 0.5;
-        
+
         // 垂直线
         for (let x = 0; x < canvas.width; x += gridSpacing) {
             ctx.beginPath();
@@ -251,7 +280,7 @@ function drawCoordinateSystem() {
             ctx.lineTo(x, canvas.height);
             ctx.stroke();
         }
-        
+
         // 水平线
         for (let y = 0; y < canvas.height; y += gridSpacing) {
             ctx.beginPath();
@@ -260,31 +289,31 @@ function drawCoordinateSystem() {
             ctx.stroke();
         }
     }
-    
+
     // 绘制坐标轴
     ctx.strokeStyle = darkMode ? '#888' : '#000';
     ctx.lineWidth = 2;
-    
+
     // X轴
     ctx.beginPath();
     ctx.moveTo(0, offsetY);
     ctx.lineTo(canvas.width, offsetY);
     ctx.stroke();
-    
+
     // Y轴
     ctx.beginPath();
     ctx.moveTo(offsetX, 0);
     ctx.lineTo(offsetX, canvas.height);
     ctx.stroke();
-    
+
     // 绘制坐标轴标签
     ctx.fillStyle = darkMode ? '#ccc' : '#000';
     ctx.font = '12px Arial';
     ctx.textAlign = 'center';
-    
+
     let decimalPlaces = getDecimalPlaces(scale);
     let labelSpacing = Math.max(40, scale * 2);
-    
+
     // X轴标签
     for (let x = offsetX; x < canvas.width; x += labelSpacing) {
         let value = (x - offsetX) / scale;
@@ -294,7 +323,7 @@ function drawCoordinateSystem() {
         let value = (x - offsetX) / scale;
         ctx.fillText(formatNumber(value, decimalPlaces), x, offsetY + 15);
     }
-    
+
     // Y轴标签
     ctx.textAlign = 'right';
     for (let y = offsetY; y > 0; y -= labelSpacing) {
@@ -305,31 +334,205 @@ function drawCoordinateSystem() {
         let value = (offsetY - y) / scale;
         ctx.fillText(formatNumber(value, decimalPlaces), offsetX - 5, y + 4);
     }
-    
+
     // 绘制原点
     ctx.fillText('O', offsetX - 10, offsetY + 15);
-    
+
     // 绘制所有方程
     drawAllEquations();
-    
+
     // 绘制交点
     if (showIntersections) {
         drawIntersections();
     }
 }
 
+// 3D点投影到2D画布
+function project3DTo2D(x, y, z) {
+    return project3DTo2DWithFog(x, y, z);
+}
+
+// 绘制3D坐标系
+function draw3DCoordinateSystem() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 设置背景色
+    if (darkMode) {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // 绘制3D网格
+    if (showGrid) {
+        draw3DGrid();
+    }
+
+    // 绘制3D坐标轴
+    draw3DAxes();
+
+    // 绘制3D方程
+    drawAllEquations3D();
+}
+
+// 绘制3D网格
+function draw3DGrid() {
+    ctx.strokeStyle = darkMode ? '#333' : '#e0e0e0';
+    ctx.lineWidth = 0.5;
+
+    let gridRange = 10;
+    let gridStep = 1;
+
+    // XY平面网格
+    for (let i = -gridRange; i <= gridRange; i += gridStep) {
+        // 沿X方向的线
+        let start1 = project3DTo2D(-gridRange * scale, i * scale, 0);
+        let end1 = project3DTo2D(gridRange * scale, i * scale, 0);
+        ctx.beginPath();
+        ctx.moveTo(start1.x, start1.y);
+        ctx.lineTo(end1.x, end1.y);
+        ctx.stroke();
+
+        // 沿Y方向的线
+        let start2 = project3DTo2D(i * scale, -gridRange * scale, 0);
+        let end2 = project3DTo2D(i * scale, gridRange * scale, 0);
+        ctx.beginPath();
+        ctx.moveTo(start2.x, start2.y);
+        ctx.lineTo(end2.x, end2.y);
+        ctx.stroke();
+    }
+
+    // XZ平面网格
+    for (let i = -gridRange; i <= gridRange; i += gridStep) {
+        // 沿X方向的线
+        let start1 = project3DTo2D(-gridRange * scale, 0, i * scale);
+        let end1 = project3DTo2D(gridRange * scale, 0, i * scale);
+        ctx.beginPath();
+        ctx.moveTo(start1.x, start1.y);
+        ctx.lineTo(end1.x, end1.y);
+        ctx.stroke();
+
+        // 沿Z方向的线
+        let start2 = project3DTo2D(i * scale, 0, -gridRange * scale);
+        let end2 = project3DTo2D(i * scale, 0, gridRange * scale);
+        ctx.beginPath();
+        ctx.moveTo(start2.x, start2.y);
+        ctx.lineTo(end2.x, end2.y);
+        ctx.stroke();
+    }
+}
+
+// 绘制3D坐标轴
+function draw3DAxes() {
+    ctx.strokeStyle = darkMode ? '#888' : '#000';
+    ctx.lineWidth = 2;
+
+    let axisLength = 12 * scale;
+
+    // X轴（红色）
+    ctx.strokeStyle = '#ff0000';
+    ctx.beginPath();
+    let xAxisStart = project3DTo2D(-axisLength, 0, 0);
+    let xAxisEnd = project3DTo2D(axisLength, 0, 0);
+    ctx.moveTo(xAxisStart.x, xAxisStart.y);
+    ctx.lineTo(xAxisEnd.x, xAxisEnd.y);
+    ctx.stroke();
+
+    // Y轴（绿色）
+    ctx.strokeStyle = '#00ff00';
+    ctx.beginPath();
+    let yAxisStart = project3DTo2D(0, -axisLength, 0);
+    let yAxisEnd = project3DTo2D(0, axisLength, 0);
+    ctx.moveTo(yAxisStart.x, yAxisStart.y);
+    ctx.lineTo(yAxisEnd.x, yAxisEnd.y);
+    ctx.stroke();
+
+    // Z轴（蓝色）
+    ctx.strokeStyle = '#0000ff';
+    ctx.beginPath();
+    let zAxisStart = project3DTo2D(0, 0, -axisLength);
+    let zAxisEnd = project3DTo2D(0, 0, axisLength);
+    ctx.moveTo(zAxisStart.x, zAxisStart.y);
+    ctx.lineTo(zAxisEnd.x, zAxisEnd.y);
+    ctx.stroke();
+
+    // 绘制坐标轴标签
+    ctx.fillStyle = darkMode ? '#ccc' : '#000';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'left';
+
+    // X轴标签
+    ctx.fillStyle = '#ff0000';
+    let xLabel = project3DTo2D(axisLength + 0.5 * scale, 0, 0);
+    ctx.fillText('X', xLabel.x, xLabel.y);
+
+    // Y轴标签
+    ctx.fillStyle = '#00ff00';
+    let yLabel = project3DTo2D(0, axisLength + 0.5 * scale, 0);
+    ctx.fillText('Y', yLabel.x, yLabel.y);
+
+    // Z轴标签
+    ctx.fillStyle = '#0000ff';
+    let zLabel = project3DTo2D(0, 0, axisLength + 0.5 * scale);
+    ctx.fillText('Z', zLabel.x, zLabel.y);
+
+    // 绘制原点
+    ctx.fillStyle = darkMode ? '#fff' : '#000';
+    let origin = project3DTo2D(0, 0, 0);
+    ctx.fillText('O', origin.x - 15, origin.y + 15);
+
+    // 绘制刻度标签
+    ctx.font = '11px Arial';
+    ctx.fillStyle = darkMode ? '#ccc' : '#000';
+
+    let decimalPlaces = getDecimalPlaces(scale);
+    let labelStep = Math.max(1, Math.floor(5 / scale));
+
+    // X轴刻度
+    for (let i = -10; i <= 10; i += labelStep) {
+        if (i === 0) continue;
+        let pos = project3DTo2D(i * scale, 0, 0);
+        ctx.fillText(formatNumber(i, decimalPlaces), pos.x, pos.y + 15);
+    }
+
+    // Y轴刻度
+    for (let i = -10; i <= 10; i += labelStep) {
+        if (i === 0) continue;
+        let pos = project3DTo2D(0, i * scale, 0);
+        ctx.fillText(formatNumber(i, decimalPlaces), pos.x - 5, pos.y);
+    }
+
+    // Z轴刻度
+    for (let i = -10; i <= 10; i += labelStep) {
+        if (i === 0) continue;
+        let pos = project3DTo2D(0, 0, i * scale);
+        ctx.fillText(formatNumber(i, decimalPlaces), pos.x + 5, pos.y);
+    }
+}
+
 // 解析公式
 function parseFormula(formula) {
     formula = formula.replace(/\s/g, '');
-    
+
     // 支持多种公式格式
-    
+
+    // 检查是否为3D空间曲线公式
+    if (formula.startsWith('3d:')) {
+        let curveType = formula.substring(3);
+        return parse3DCurveEquation(curveType);
+    }
+
+    // 检查是否为3D曲面公式
+    if (formula.startsWith('3dsurf:')) {
+        let surfaceType = formula.substring(7);
+        return parse3DSurfaceEquation(surfaceType);
+    }
+
     // 检查是否为微分公式 (deriv:expression 或 y=deriv(...))
     if (formula.startsWith('deriv:')) {
         let expression = formula.substring(6);
         return parseDerivativeEquation(expression);
     }
-    
+
     // 检查是否为积分公式 (integ:expression:a:b)
     if (formula.startsWith('integ:')) {
         let parts = formula.substring(6).split(':');
@@ -341,13 +544,13 @@ function parseFormula(formula) {
         }
         return null;
     }
-    
+
     // 检查是否为 y=deriv(...) 格式
     if (formula.startsWith('y=deriv(') && formula.endsWith(')')) {
         let expression = formula.substring(8, formula.length - 1);
         return parseDerivativeEquation(expression);
     }
-    
+
     // 检查是否为 y=integ(...) 格式 (y=integ(expression,a,b))
     if (formula.startsWith('y=integ(') && formula.endsWith(')')) {
         let content = formula.substring(8, formula.length - 1);
@@ -360,7 +563,7 @@ function parseFormula(formula) {
         }
         return null;
     }
-    
+
     if (!formula.startsWith('y=')) {
         return null;
     }
@@ -434,6 +637,221 @@ function parseFormula(formula) {
 // 解析微分方程
 function parseDerivativeEquation(expression) {
     return { type: 'derivative', expression: expression };
+}
+
+// 解析3D曲面方程
+function parse3DSurfaceEquation(surfaceType) {
+    const surfaces = {
+        'plane': {
+            type: '3dsurface',
+            surfaceType: 'plane',
+            name: '平面',
+            formula: 'z = ax + by + c',
+            params: { a: 0.5, b: 0.3, c: 0 },
+            paramLabels: { a: 'X系数(a)', b: 'Y系数(b)', c: '常数(c)' }
+        },
+        'sphere': {
+            type: '3dsurface',
+            surfaceType: 'sphere',
+            name: '球面',
+            formula: 'x² + y² + z² = r²',
+            params: { r: 5 },
+            paramLabels: { r: '半径(r)' }
+        },
+        'cone': {
+            type: '3dsurface',
+            surfaceType: 'cone',
+            name: '圆锥面',
+            formula: 'z² = a(x² + y²)',
+            params: { a: 1 },
+            paramLabels: { a: '开口系数(a)' }
+        },
+        'paraboloid': {
+            type: '3dsurface',
+            surfaceType: 'paraboloid',
+            name: '抛物面',
+            formula: 'z = a(x² + y²)',
+            params: { a: 0.5 },
+            paramLabels: { a: '曲率(a)' }
+        },
+        'hyperboloid': {
+            type: '3dsurface',
+            surfaceType: 'hyperboloid',
+            name: '单叶双曲面',
+            formula: 'x²/a² + y²/b² - z²/c² = 1',
+            params: { a: 3, b: 3, c: 2 },
+            paramLabels: { a: 'X半轴(a)', b: 'Y半轴(b)', c: 'Z半轴(c)' }
+        },
+        'saddle': {
+            type: '3dsurface',
+            surfaceType: 'saddle',
+            name: '马鞍面',
+            formula: 'z = a(x² - y²)',
+            params: { a: 0.5 },
+            paramLabels: { a: '曲率(a)' }
+        },
+        'wave': {
+            type: '3dsurface',
+            surfaceType: 'wave',
+            name: '波浪面',
+            formula: 'z = a·sin(bx)·cos(cy)',
+            params: { a: 2, b: 0.5, c: 0.5 },
+            paramLabels: { a: '振幅(a)', b: 'X频率(b)', c: 'Y频率(c)' }
+        },
+        'torus-surf': {
+            type: '3dsurface',
+            surfaceType: 'torus-surf',
+            name: '环面',
+            formula: '(R-√(x²+y²))² + z² = r²',
+            params: { R: 5, r: 2 },
+            paramLabels: { R: '大半径(R)', r: '小半径(r)' }
+        },
+        'gaussian': {
+            type: '3dsurface',
+            surfaceType: 'gaussian',
+            name: '高斯曲面',
+            formula: 'z = a·exp(-(x²+y²)/b²)',
+            params: { a: 5, b: 3 },
+            paramLabels: { a: '高度(a)', b: '宽度(b)' }
+        },
+        'ripple': {
+            type: '3dsurface',
+            surfaceType: 'ripple',
+            name: '涟漪面',
+            formula: 'z = a·sin(b·√(x²+y²))',
+            params: { a: 2, b: 0.8 },
+            paramLabels: { a: '振幅(a)', b: '频率(b)' }
+        }
+    };
+
+    if (surfaces[surfaceType]) {
+        let surf = surfaces[surfaceType];
+        return {
+            type: surf.type,
+            surfaceType: surf.surfaceType,
+            name: surf.name,
+            formula: surf.formula,
+            params: { ...surf.params },
+            paramLabels: { ...surf.paramLabels }
+        };
+    }
+    return null;
+}
+
+// 解析3D空间曲线方程
+function parse3DCurveEquation(curveType) {
+    const curves = {
+        'helix': {
+            type: '3dcurve',
+            curveType: 'helix',
+            name: '螺旋线',
+            formula: 'x = a·cos(t), y = a·sin(t), z = b·t',
+            params: { a: 3, b: 0.5 },
+            paramLabels: { a: '半径(a)', b: '螺距(b)' }
+        },
+        'trefoil': {
+            type: '3dcurve',
+            curveType: 'trefoil',
+            name: '三叶结',
+            formula: 'x = a(sin(t)+2sin(2t)), y = a(cos(t)-2cos(2t)), z = -a·sin(3t)',
+            params: { a: 3 },
+            paramLabels: { a: '缩放(a)' }
+        },
+        'torus': {
+            type: '3dcurve',
+            curveType: 'torus',
+            name: '环面结',
+            formula: 'x = (R+r·cos(qt))cos(pt), y = (R+r·cos(qt))sin(pt), z = r·sin(qt)',
+            params: { R: 4, r: 1.5, p: 2, q: 3 },
+            paramLabels: { R: '大半径(R)', r: '小半径(r)', p: '旋转数(p)', q: '缠绕数(q)' }
+        },
+        'lissajous': {
+            type: '3dcurve',
+            curveType: 'lissajous',
+            name: '利萨茹曲线',
+            formula: 'x = a·sin(nx·t), y = b·sin(ny·t), z = c·sin(nz·t)',
+            params: { a: 3, b: 2, c: 1, nx: 3, ny: 2, nz: 1 },
+            paramLabels: { a: 'X振幅(a)', b: 'Y振幅(b)', c: 'Z振幅(c)', nx: 'X频率(nx)', ny: 'Y频率(ny)', nz: 'Z频率(nz)' }
+        },
+        'viviani': {
+            type: '3dcurve',
+            curveType: 'viviani',
+            name: '维维亚尼曲线',
+            formula: 'x = a(1+cos(t)), y = a·sin(t), z = 2a·sin(t/2)',
+            params: { a: 3 },
+            paramLabels: { a: '半径(a)' }
+        },
+        'spherical-spiral': {
+            type: '3dcurve',
+            curveType: 'spherical-spiral',
+            name: '球面螺旋线',
+            formula: 'x = a·cos(t)·cos(bt), y = a·sin(t)·cos(bt), z = a·sin(bt)',
+            params: { a: 4, b: 0.3 },
+            paramLabels: { a: '半径(a)', b: '螺旋密度(b)' }
+        },
+        'conical-spiral': {
+            type: '3dcurve',
+            curveType: 'conical-spiral',
+            name: '圆锥螺旋线',
+            formula: 'x = at·cos(t), y = at·sin(t), z = b·t',
+            params: { a: 0.5, b: 0.3 },
+            paramLabels: { a: '圆锥系数(a)', b: '高度系数(b)' }
+        },
+        'rose': {
+            type: '3dcurve',
+            curveType: 'rose',
+            name: '3D玫瑰线',
+            formula: 'r = a·cos(n·t), x = r·cos(t), y = r·sin(t), z = k·t',
+            params: { a: 4, n: 5, k: 0.5 },
+            paramLabels: { a: '半径(a)', n: '花瓣数(n)', k: '高度系数(k)' }
+        },
+        'twisted-cubic': {
+            type: '3dcurve',
+            curveType: 'twisted-cubic',
+            name: '扭曲立方曲线',
+            formula: 'x = t, y = a·t², z = a²·t³/3',
+            params: { a: 0.5 },
+            paramLabels: { a: '扭曲系数(a)' }
+        },
+        'sine-wave': {
+            type: '3dcurve',
+            curveType: 'sine-wave',
+            name: '3D正弦波',
+            formula: 'x = a·t, y = b·sin(ct), z = b·cos(ct)',
+            params: { a: 3, b: 1, c: 0.5 },
+            paramLabels: { a: 'X系数(a)', b: '振幅(b)', c: '频率(c)' }
+        },
+        'figure-eight': {
+            type: '3dcurve',
+            curveType: 'figure-eight',
+            name: '8字结',
+            formula: 'x = a(2+cos(2t))cos(3t), y = a(2+cos(2t))sin(3t), z = a·sin(4t)',
+            params: { a: 3 },
+            paramLabels: { a: '缩放(a)' }
+        },
+        'cinquefoil': {
+            type: '3dcurve',
+            curveType: 'cinquefoil',
+            name: '五叶结',
+            formula: 'x = a·cos(2t)(3+cos(5t)), y = a·sin(2t)(3+cos(5t)), z = a·sin(5t)',
+            params: { a: 3 },
+            paramLabels: { a: '缩放(a)' }
+        }
+    };
+
+    if (curves[curveType]) {
+        // 返回对象的深拷贝，避免多个方程共享同一个对象
+        let curve = curves[curveType];
+        return {
+            type: curve.type,
+            curveType: curve.curveType,
+            name: curve.name,
+            formula: curve.formula,
+            params: { ...curve.params },
+            paramLabels: { ...curve.paramLabels }
+        };
+    }
+    return null;
 }
 
 // 解析积分方程
@@ -1030,8 +1448,15 @@ function formatEquation(parsed) {
         case 'integral':
             display += `∫[${parsed.a},${parsed.b}] ${parsed.expression} dx`;
             break;
+
+        case '3dcurve':
+            display += parsed.name || '3D曲线';
+            break;
+        case '3dsurface':
+            display += parsed.name || '3D曲面';
+            break;
     }
-    
+
     return display;
 }
 
@@ -1068,6 +1493,359 @@ function drawAllEquations() {
             drawEquation(equation, index);
         }
     });
+}
+
+// 绘制所有3D方程
+function drawAllEquations3D() {
+    equations.forEach((equation, index) => {
+        if (equation.visible) {
+            drawEquation3D(equation, index);
+        }
+    });
+}
+
+// 绘制单个3D方程
+function drawEquation3D(equation, index) {
+    ctx.beginPath();
+    ctx.strokeStyle = equation.color;
+    ctx.lineWidth = index === selectedEquationIndex ? 5 : 3;
+
+    // 选中方程时添加发光效果
+    if (index === selectedEquationIndex) {
+        ctx.shadowColor = equation.color;
+        ctx.shadowBlur = 10;
+    }
+
+    // 设置线条样式
+    if (equation.style === 'dashed') {
+        ctx.setLineDash([10, 5]);
+    } else if (equation.style === 'dotted') {
+        ctx.setLineDash([3, 3]);
+    } else {
+        ctx.setLineDash([]);
+    }
+
+    // 根据方程类型选择绘制方式
+    if (equation.parsed.type === '3dcurve') {
+        draw3DCurve(equation.parsed);
+    } else if (equation.parsed.type === '3dsurface') {
+        draw3DSurface(equation.parsed);
+    } else {
+        // 在3D模式下，将2D函数绘制为XY平面上的曲线（Z=0）
+        drawEquation3DInPlane(equation.parsed);
+    }
+
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+}
+
+// 在3D XY平面上绘制方程
+function drawEquation3DInPlane(parsed) {
+    let isFirstPoint = true;
+    let step = 0.5; // 采样步长
+
+    for (let x = -10; x <= 10; x += step) {
+        let y = calculateEquationY(parsed, x);
+
+        if (!isFinite(y)) {
+            isFirstPoint = true;
+            continue;
+        }
+
+        // 将2D坐标转换为3D坐标（Z=0）
+        let point3D = project3DTo2D(x * scale, y * scale, 0);
+
+        if (isFirstPoint) {
+            ctx.moveTo(point3D.x, point3D.y);
+            isFirstPoint = false;
+        } else {
+            ctx.lineTo(point3D.x, point3D.y);
+        }
+    }
+    ctx.stroke();
+}
+
+// 计算3D曲面上的点
+function calculate3DSurfacePoint(surfaceType, u, v, params) {
+    let x, y, z;
+
+    switch (surfaceType) {
+        case 'plane': // 平面 z = ax + by + c
+            x = u;
+            y = v;
+            z = params.a * x + params.b * y + params.c;
+            break;
+
+        case 'sphere': // 球面 x² + y² + z² = r²
+            let phi = u;
+            let theta = v;
+            x = params.r * Math.sin(phi) * Math.cos(theta);
+            y = params.r * Math.sin(phi) * Math.sin(theta);
+            z = params.r * Math.cos(phi);
+            break;
+
+        case 'cone': // 圆锥面 z² = a(x² + y²)
+            let coneR = u;
+            let coneTheta = v;
+            x = coneR * Math.cos(coneTheta);
+            y = coneR * Math.sin(coneTheta);
+            z = Math.sqrt(params.a) * coneR;
+            // 创建上下两个锥面
+            if (Math.random() > 0.5) z = -z;
+            break;
+
+        case 'paraboloid': // 抛物面 z = a(x² + y²)
+            let paraR = u;
+            let paraTheta = v;
+            x = paraR * Math.cos(paraTheta);
+            y = paraR * Math.sin(paraTheta);
+            z = params.a * (x * x + y * y);
+            break;
+
+        case 'hyperboloid': // 单叶双曲面 x²/a² + y²/b² - z²/c² = 1
+            let hypU = u;
+            let hypV = v;
+            x = params.a * Math.cosh(hypU) * Math.cos(hypV);
+            y = params.b * Math.cosh(hypU) * Math.sin(hypV);
+            z = params.c * Math.sinh(hypU);
+            break;
+
+        case 'saddle': // 马鞍面 z = a(x² - y²)
+            x = u;
+            y = v;
+            z = params.a * (x * x - y * y);
+            break;
+
+        case 'wave': // 波浪面 z = a·sin(bx)·cos(cy)
+            x = u;
+            y = v;
+            z = params.a * Math.sin(params.b * x) * Math.cos(params.c * y);
+            break;
+
+        case 'torus-surf': // 环面
+            let torusU = u;
+            let torusV = v;
+            x = (params.R + params.r * Math.cos(torusV)) * Math.cos(torusU);
+            y = (params.R + params.r * Math.cos(torusV)) * Math.sin(torusU);
+            z = params.r * Math.sin(torusV);
+            break;
+
+        case 'gaussian': // 高斯曲面 z = a·exp(-(x²+y²)/b²)
+            x = u;
+            y = v;
+            z = params.a * Math.exp(-(x * x + y * y) / (params.b * params.b));
+            break;
+
+        case 'ripple': // 涟漪面 z = a·sin(b·√(x²+y²))
+            x = u;
+            y = v;
+            let r = Math.sqrt(x * x + y * y);
+            z = params.a * Math.sin(params.b * r);
+            break;
+
+        default:
+            x = 0; y = 0; z = 0;
+    }
+
+    return { x, y, z };
+}
+
+// 计算3D空间曲线上的点
+function calculate3DCurvePoint(curveType, t, params) {
+    let x, y, z;
+
+    switch (curveType) {
+        case 'helix': // 螺旋线
+            x = params.a * Math.cos(t);
+            y = params.a * Math.sin(t);
+            z = params.b * t;
+            break;
+
+        case 'trefoil': // 三叶结
+            x = params.a * (Math.sin(t) + 2 * Math.sin(2 * t));
+            y = params.a * (Math.cos(t) - 2 * Math.cos(2 * t));
+            z = params.a * (-Math.sin(3 * t));
+            break;
+
+        case 'torus': // 环面结
+            let torusX = (params.R + params.r * Math.cos(params.q * t)) * Math.cos(params.p * t);
+            let torusY = (params.R + params.r * Math.cos(params.q * t)) * Math.sin(params.p * t);
+            let torusZ = params.r * Math.sin(params.q * t);
+            x = torusX;
+            y = torusY;
+            z = torusZ;
+            break;
+
+        case 'lissajous': // 利萨茹曲线
+            x = params.a * Math.sin(params.nx * t);
+            y = params.b * Math.sin(params.ny * t);
+            z = params.c * Math.sin(params.nz * t);
+            break;
+
+        case 'viviani': // 维维亚尼曲线
+            x = params.a * (1 + Math.cos(t));
+            y = params.a * Math.sin(t);
+            z = 2 * params.a * Math.sin(t / 2);
+            break;
+
+        case 'spherical-spiral': // 球面螺旋线
+            x = params.a * Math.cos(t) * Math.cos(params.b * t);
+            y = params.a * Math.sin(t) * Math.cos(params.b * t);
+            z = params.a * Math.sin(params.b * t);
+            break;
+
+        case 'conical-spiral': // 圆锥螺旋线
+            let r = params.a * t;
+            x = r * Math.cos(t);
+            y = r * Math.sin(t);
+            z = params.b * t;
+            break;
+
+        case 'rose': // 3D玫瑰线
+            let roseR = params.a * Math.cos(params.n * t);
+            x = roseR * Math.cos(t);
+            y = roseR * Math.sin(t);
+            z = params.k * t;
+            break;
+
+        case 'twisted-cubic': // 扭曲立方曲线
+            x = t;
+            y = params.a * t * t;
+            z = params.a * params.a * t * t * t / 3;
+            break;
+
+        case 'sine-wave': // 3D正弦波
+            x = params.a * t;
+            y = params.b * Math.sin(params.c * t);
+            z = params.b * Math.cos(params.c * t);
+            break;
+
+        case 'figure-eight': // 8字结
+            x = params.a * (2 + Math.cos(2 * t)) * Math.cos(3 * t);
+            y = params.a * (2 + Math.cos(2 * t)) * Math.sin(3 * t);
+            z = params.a * Math.sin(4 * t);
+            break;
+
+        case 'cinquefoil': // 五叶结
+            x = params.a * Math.cos(2 * t) * (3 + Math.cos(5 * t));
+            y = params.a * Math.sin(2 * t) * (3 + Math.cos(5 * t));
+            z = params.a * Math.sin(5 * t);
+            break;
+
+        default:
+            x = 0; y = 0; z = 0;
+    }
+
+    return { x, y, z };
+}
+
+// 绘制3D空间曲线
+function draw3DCurve(parsed) {
+    let isFirstPoint = true;
+    let step = 0.02; // 采样步长
+    let tRange = parsed.curveType === 'twisted-cubic' ? 6 : 4 * Math.PI;
+    let tStart = parsed.curveType === 'twisted-cubic' ? -3 : 0;
+
+    for (let t = tStart; t <= tStart + tRange; t += step) {
+        let point = calculate3DCurvePoint(parsed.curveType, t, parsed.params);
+
+        if (!isFinite(point.x) || !isFinite(point.y) || !isFinite(point.z)) {
+            isFirstPoint = true;
+            continue;
+        }
+
+        // 将3D坐标投影到2D画布
+        let point2D = project3DTo2D(point.x * scale, point.y * scale, point.z * scale);
+
+        if (isFirstPoint) {
+            ctx.moveTo(point2D.x, point2D.y);
+            isFirstPoint = false;
+        } else {
+            ctx.lineTo(point2D.x, point2D.y);
+        }
+    }
+    ctx.stroke();
+}
+
+// 绘制3D曲面
+function draw3DSurface(parsed) {
+    let uRange, vRange, uStep, vStep;
+    let surfaceType = parsed.surfaceType;
+
+    // 根据曲面类型设置参数范围
+    switch (surfaceType) {
+        case 'sphere':
+        case 'torus-surf':
+            uRange = { min: 0, max: 2 * Math.PI };
+            vRange = { min: 0, max: 2 * Math.PI };
+            uStep = 0.15;
+            vStep = 0.15;
+            break;
+        case 'cone':
+        case 'paraboloid':
+            uRange = { min: 0, max: 8 };
+            vRange = { min: 0, max: 2 * Math.PI };
+            uStep = 0.3;
+            vStep = 0.15;
+            break;
+        case 'hyperboloid':
+            uRange = { min: -2, max: 2 };
+            vRange = { min: 0, max: 2 * Math.PI };
+            uStep = 0.1;
+            vStep = 0.15;
+            break;
+        case 'plane':
+        case 'saddle':
+        case 'wave':
+        case 'gaussian':
+        case 'ripple':
+        default:
+            uRange = { min: -8, max: 8 };
+            vRange = { min: -8, max: 8 };
+            uStep = 0.4;
+            vStep = 0.4;
+            break;
+    }
+
+    // 绘制经线（固定u，变化v）
+    for (let u = uRange.min; u <= uRange.max; u += uStep * 2) {
+        let isFirstPoint = true;
+        for (let v = vRange.min; v <= vRange.max; v += vStep) {
+            let point = calculate3DSurfacePoint(surfaceType, u, v, parsed.params);
+            if (!isFinite(point.x) || !isFinite(point.y) || !isFinite(point.z)) {
+                isFirstPoint = true;
+                continue;
+            }
+            let point2D = project3DTo2D(point.x * scale, point.y * scale, point.z * scale);
+            if (isFirstPoint) {
+                ctx.moveTo(point2D.x, point2D.y);
+                isFirstPoint = false;
+            } else {
+                ctx.lineTo(point2D.x, point2D.y);
+            }
+        }
+    }
+
+    // 绘制纬线（固定v，变化u）
+    for (let v = vRange.min; v <= vRange.max; v += vStep * 2) {
+        let isFirstPoint = true;
+        for (let u = uRange.min; u <= uRange.max; u += uStep) {
+            let point = calculate3DSurfacePoint(surfaceType, u, v, parsed.params);
+            if (!isFinite(point.x) || !isFinite(point.y) || !isFinite(point.z)) {
+                isFirstPoint = true;
+                continue;
+            }
+            let point2D = project3DTo2D(point.x * scale, point.y * scale, point.z * scale);
+            if (isFirstPoint) {
+                ctx.moveTo(point2D.x, point2D.y);
+                isFirstPoint = false;
+            } else {
+                ctx.lineTo(point2D.x, point2D.y);
+            }
+        }
+    }
+
+    ctx.stroke();
 }
 
 // 计算方程与坐标轴的交点
@@ -1322,13 +2100,13 @@ function drawEquation(equation, index) {
     ctx.beginPath();
     ctx.strokeStyle = equation.color;
     ctx.lineWidth = index === selectedEquationIndex ? 5 : 3;
-    
+
     // 选中方程时添加发光效果
     if (index === selectedEquationIndex) {
         ctx.shadowColor = equation.color;
         ctx.shadowBlur = 10;
     }
-    
+
     // 设置线条样式
     if (equation.style === 'dashed') {
         ctx.setLineDash([10, 5]);
@@ -1337,7 +2115,7 @@ function drawEquation(equation, index) {
     } else {
         ctx.setLineDash([]);
     }
-    
+
     switch (equation.parsed.type) {
         case 'linear':
             drawLinearEquation(equation.parsed);
@@ -1378,10 +2156,129 @@ function drawEquation(equation, index) {
         case 'integral':
             drawIntegralEquation(equation.parsed);
             break;
+        case '3dcurve':
+            // 在2D模式下，将3D曲线投影到XY平面
+            draw3DCurve2DProjection(equation.parsed);
+            break;
+        case '3dsurface':
+            // 在2D模式下，将3D曲面投影到XY平面
+            draw3DSurface2DProjection(equation.parsed);
+            break;
     }
-    
+
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
+}
+
+// 在2D模式下绘制3D曲线的XY平面投影
+function draw3DCurve2DProjection(parsed) {
+    let isFirstPoint = true;
+    let step = 0.02;
+    let tRange = parsed.curveType === 'twisted-cubic' ? 6 : 4 * Math.PI;
+    let tStart = parsed.curveType === 'twisted-cubic' ? -3 : 0;
+
+    for (let t = tStart; t <= tStart + tRange; t += step) {
+        let point = calculate3DCurvePoint(parsed.curveType, t, parsed.params);
+
+        if (!isFinite(point.x) || !isFinite(point.y)) {
+            isFirstPoint = true;
+            continue;
+        }
+
+        let canvasX = offsetX + point.x * scale;
+        let canvasY = offsetY - point.y * scale;
+
+        if (isFirstPoint) {
+            ctx.moveTo(canvasX, canvasY);
+            isFirstPoint = false;
+        } else {
+            ctx.lineTo(canvasX, canvasY);
+        }
+    }
+    ctx.stroke();
+}
+
+// 在2D模式下绘制3D曲面的XY平面投影
+function draw3DSurface2DProjection(parsed) {
+    let uRange, vRange, uStep, vStep;
+    let surfaceType = parsed.surfaceType;
+
+    // 根据曲面类型设置参数范围（与3D绘制相同）
+    switch (surfaceType) {
+        case 'sphere':
+        case 'torus-surf':
+            uRange = { min: 0, max: 2 * Math.PI };
+            vRange = { min: 0, max: 2 * Math.PI };
+            uStep = 0.15;
+            vStep = 0.15;
+            break;
+        case 'cone':
+        case 'paraboloid':
+            uRange = { min: 0, max: 8 };
+            vRange = { min: 0, max: 2 * Math.PI };
+            uStep = 0.3;
+            vStep = 0.15;
+            break;
+        case 'hyperboloid':
+            uRange = { min: -2, max: 2 };
+            vRange = { min: 0, max: 2 * Math.PI };
+            uStep = 0.1;
+            vStep = 0.15;
+            break;
+        case 'plane':
+        case 'saddle':
+        case 'wave':
+        case 'gaussian':
+        case 'ripple':
+        default:
+            uRange = { min: -8, max: 8 };
+            vRange = { min: -8, max: 8 };
+            uStep = 0.4;
+            vStep = 0.4;
+            break;
+    }
+
+    // 绘制经线投影
+    for (let u = uRange.min; u <= uRange.max; u += uStep * 2) {
+        let isFirstPoint = true;
+        for (let v = vRange.min; v <= vRange.max; v += vStep) {
+            let point = calculate3DSurfacePoint(surfaceType, u, v, parsed.params);
+            if (!isFinite(point.x) || !isFinite(point.y)) {
+                isFirstPoint = true;
+                continue;
+            }
+            let canvasX = offsetX + point.x * scale;
+            let canvasY = offsetY - point.y * scale;
+            if (isFirstPoint) {
+                ctx.moveTo(canvasX, canvasY);
+                isFirstPoint = false;
+            } else {
+                ctx.lineTo(canvasX, canvasY);
+            }
+        }
+    }
+
+    // 绘制纬线投影
+    for (let v = vRange.min; v <= vRange.max; v += vStep * 2) {
+        let isFirstPoint = true;
+        for (let u = uRange.min; u <= uRange.max; u += uStep) {
+            let point = calculate3DSurfacePoint(surfaceType, u, v, parsed.params);
+            if (!isFinite(point.x) || !isFinite(point.y)) {
+                isFirstPoint = true;
+                continue;
+            }
+            let canvasX = offsetX + point.x * scale;
+            let canvasY = offsetY - point.y * scale;
+            if (isFirstPoint) {
+                ctx.moveTo(canvasX, canvasY);
+                isFirstPoint = false;
+            } else {
+                ctx.lineTo(canvasX, canvasY);
+            }
+        }
+    }
+
+    ctx.stroke();
 }
 
 // 绘制一次方程
@@ -2034,6 +2931,14 @@ function generateEquationEditor(equation, index) {
         case 'integral':
             html += `<div class="equation-formula-row">∫[${parsed.a},${parsed.b}] ${parsed.expression} dx</div>`;
             break;
+        case '3dcurve':
+            html += `<div class="equation-formula-row">${parsed.name}</div>`;
+            html += `<div class="equation-formula-detail">${parsed.formula}</div>`;
+            break;
+        case '3dsurface':
+            html += `<div class="equation-formula-row">${parsed.name}</div>`;
+            html += `<div class="equation-formula-detail">${parsed.formula}</div>`;
+            break;
         default:
             html += `<div class="equation-formula-row">${equation.formula}</div>`;
     }
@@ -2116,11 +3021,37 @@ function generateEquationEditor(equation, index) {
         case 'derivative':
             html += `<input type="text" class="equation-input-full" value="${equation.formula}" onchange="updateEquationFromInput(${index}, this.value)">`;
             break;
-            
+
         case 'integral':
             html += `<input type="text" class="equation-input-full" value="${equation.formula}" onchange="updateEquationFromInput(${index}, this.value)">`;
             break;
-            
+
+        case '3dcurve':
+            // 为每个参数创建输入框
+            if (parsed.params && parsed.paramLabels) {
+                for (let paramName in parsed.params) {
+                    if (parsed.params.hasOwnProperty(paramName)) {
+                        let label = parsed.paramLabels[paramName] || paramName;
+                        let value = parsed.params[paramName];
+                        html += `<div class="param-group"><span class="param-label">${label}:</span><input type="number" class="param-input" value="${value}" step="0.1" onchange="update3DCurveParam(${index}, '${paramName}', this.value)" title="${label}"></div>`;
+                    }
+                }
+            }
+            break;
+
+        case '3dsurface':
+            // 为每个参数创建输入框
+            if (parsed.params && parsed.paramLabels) {
+                for (let paramName in parsed.params) {
+                    if (parsed.params.hasOwnProperty(paramName)) {
+                        let label = parsed.paramLabels[paramName] || paramName;
+                        let value = parsed.params[paramName];
+                        html += `<div class="param-group"><span class="param-label">${label}:</span><input type="number" class="param-input" value="${value}" step="0.1" onchange="update3DSurfaceParam(${index}, '${paramName}', this.value)" title="${label}"></div>`;
+                    }
+                }
+            }
+            break;
+
         default:
             html += `<input type="text" class="equation-input-full" value="${equation.formula}" onchange="updateEquationFromInput(${index}, this.value)">`;
     }
@@ -2302,23 +3233,71 @@ function generateParamsEditor(equation, index) {
 function updateEquationParam(index, param, value) {
     let equation = equations[index];
     let parsed = equation.parsed;
-    
+
     // 将字符串转换为数字
     let numValue = parseFloat(value);
     if (isNaN(numValue)) {
         alert('请输入有效的数字');
         return;
     }
-    
+
     // 保留两位小数
     numValue = Math.round(numValue * 100) / 100;
-    
+
     // 更新参数
     parsed[param] = numValue;
-    
+
     // 更新方程显示
     equation.formula = formatEquation(parsed);
-    
+
+    // 保存并更新
+    saveEquations();
+    updateEquationsList();
+    drawCoordinateSystem();
+}
+
+// 更新3D曲线参数
+function update3DCurveParam(index, param, value) {
+    let equation = equations[index];
+    let parsed = equation.parsed;
+
+    // 将字符串转换为数字
+    let numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        alert('请输入有效的数字');
+        return;
+    }
+
+    // 保留两位小数
+    numValue = Math.round(numValue * 100) / 100;
+
+    // 更新参数
+    parsed.params[param] = numValue;
+
+    // 保存并更新
+    saveEquations();
+    updateEquationsList();
+    drawCoordinateSystem();
+}
+
+// 更新3D曲面参数
+function update3DSurfaceParam(index, param, value) {
+    let equation = equations[index];
+    let parsed = equation.parsed;
+
+    // 将字符串转换为数字
+    let numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        alert('请输入有效的数字');
+        return;
+    }
+
+    // 保留两位小数
+    numValue = Math.round(numValue * 100) / 100;
+
+    // 更新参数
+    parsed.params[param] = numValue;
+
     // 保存并更新
     saveEquations();
     updateEquationsList();
@@ -2687,6 +3666,255 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// 切换到2D模式
+function switchTo2D() {
+    is3DMode = false;
+    document.getElementById('btn-2d').classList.add('active');
+    document.getElementById('btn-3d').classList.remove('active');
+    document.getElementById('view-controls').style.display = 'none';
+    let autoRotateControl = document.getElementById('auto-rotate-speed-control');
+    if (autoRotateControl) autoRotateControl.style.display = 'none';
+    let fogControl = document.getElementById('fog-control');
+    if (fogControl) fogControl.style.display = 'none';
+    canvas.style.cursor = 'crosshair';
+    stopAutoRotate();
+    drawCoordinateSystem();
+}
+
+// 切换到3D模式
+function switchTo3D() {
+    is3DMode = true;
+    document.getElementById('btn-2d').classList.remove('active');
+    document.getElementById('btn-3d').classList.add('active');
+    document.getElementById('view-controls').style.display = 'flex';
+    let autoRotateControl = document.getElementById('auto-rotate-speed-control');
+    if (autoRotateControl) autoRotateControl.style.display = 'block';
+    let fogControl = document.getElementById('fog-control');
+    if (fogControl) fogControl.style.display = 'block';
+    canvas.style.cursor = 'move';
+    drawCoordinateSystem();
+}
+
+// 切换自动旋转
+function toggleAutoRotate() {
+    isAutoRotating = !isAutoRotating;
+    let btn = document.getElementById('btn-autorotate');
+    if (isAutoRotating) {
+        btn.classList.add('active');
+        startAutoRotate();
+    } else {
+        btn.classList.remove('active');
+        stopAutoRotate();
+    }
+}
+
+// 开始自动旋转
+function startAutoRotate() {
+    if (autoRotateAnimationId) return;
+    
+    function animate() {
+        if (!isAutoRotating || !is3DMode) {
+            stopAutoRotate();
+            return;
+        }
+        
+        rotationY += autoRotateSpeed;
+        drawCoordinateSystem();
+        autoRotateAnimationId = requestAnimationFrame(animate);
+    }
+    
+    animate();
+}
+
+// 停止自动旋转
+function stopAutoRotate() {
+    isAutoRotating = false;
+    let btn = document.getElementById('btn-autorotate');
+    if (btn) btn.classList.remove('active');
+    if (autoRotateAnimationId) {
+        cancelAnimationFrame(autoRotateAnimationId);
+        autoRotateAnimationId = null;
+    }
+}
+
+// 更新自动旋转速度
+function updateAutoRotateSpeed(value) {
+    autoRotateSpeed = value * 0.001;
+}
+
+// 更新图例显示
+function updateLegend() {
+    let legendDisplay = document.getElementById('legend-display');
+    if (!legendDisplay) return;
+
+    // 只显示可见的方程
+    let visibleEquations = equations.filter(eq => eq.visible);
+    
+    if (visibleEquations.length === 0) {
+        legendDisplay.style.display = 'none';
+        return;
+    }
+
+    let html = '';
+    visibleEquations.forEach((equation, index) => {
+        let displayText = formatEquation(equation.parsed);
+        // 截断过长的文本
+        if (displayText.length > 25) {
+            displayText = displayText.substring(0, 22) + '...';
+        }
+        html += `<div class="legend-item">
+            <div class="legend-color" style="background-color: ${equation.color}"></div>
+            <div class="legend-text">${displayText}</div>
+        </div>`;
+    });
+
+    legendDisplay.innerHTML = html;
+    legendDisplay.style.display = 'block';
+}
+
+// 切换深度雾化
+function toggleFog() {
+    fogEnabled = document.getElementById('fog-toggle').checked;
+    fogColor = darkMode ? '#1a1a1a' : '#ffffff';
+    drawCoordinateSystem();
+}
+
+// 3D点投影到2D画布（带深度雾化）
+function project3DTo2DWithFog(x, y, z) {
+    // 应用旋转
+    let cosX = Math.cos(rotationX);
+    let sinX = Math.sin(rotationX);
+    let cosY = Math.cos(rotationY);
+    let sinY = Math.sin(rotationY);
+
+    // 绕Y轴旋转
+    let x1 = x * cosY - z * sinY;
+    let z1 = x * sinY + z * cosY;
+
+    // 绕X轴旋转
+    let y2 = y * cosX - z1 * sinX;
+    let z2 = y * sinX + z1 * cosX;
+
+    // 投影到2D
+    let screenX = offsetX + x1;
+    let screenY = offsetY - y2;
+
+    // 计算雾化因子（基于深度z2）
+    let fogFactor = 1;
+    if (fogEnabled) {
+        let distance = Math.abs(z2) / scale;
+        fogFactor = Math.exp(-fogDensity * distance);
+        fogFactor = Math.max(0.1, Math.min(1, fogFactor));
+    }
+
+    return { x: screenX, y: screenY, z: z2, fogFactor: fogFactor };
+}
+
+// 重置为正视图（从Z轴正方向看）
+function resetViewFront() {
+    rotationX = 0;
+    rotationY = 0;
+    rotationZ = 0;
+    drawCoordinateSystem();
+}
+
+// 重置为俯视图（从Y轴正方向看）
+function resetViewTop() {
+    rotationX = Math.PI / 2;
+    rotationY = 0;
+    rotationZ = 0;
+    drawCoordinateSystem();
+}
+
+// 重置为侧视图（从X轴正方向看）
+function resetViewSide() {
+    rotationX = 0;
+    rotationY = Math.PI / 2;
+    rotationZ = 0;
+    drawCoordinateSystem();
+}
+
+// 导出3D数据为JSON格式
+function export3DData() {
+    // 收集所有3D曲线和曲面的数据
+    let exportData = {
+        timestamp: new Date().toISOString(),
+        viewSettings: {
+            rotationX: rotationX,
+            rotationY: rotationY,
+            rotationZ: rotationZ,
+            scale: scale,
+            offsetX: offsetX,
+            offsetY: offsetY
+        },
+        equations: []
+    };
+
+    equations.forEach((equation, index) => {
+        if (!equation.visible) return;
+
+        let eqData = {
+            index: index,
+            name: formatEquation(equation.parsed),
+            color: equation.color,
+            style: equation.style,
+            type: equation.parsed.type
+        };
+
+        if (equation.parsed.type === '3dcurve') {
+            eqData.curveType = equation.parsed.curveType;
+            eqData.params = equation.parsed.params;
+            // 生成曲线点数据
+            eqData.points = [];
+            let step = 0.05;
+            let tRange = equation.parsed.curveType === 'twisted-cubic' ? 6 : 4 * Math.PI;
+            let tStart = equation.parsed.curveType === 'twisted-cubic' ? -3 : 0;
+
+            for (let t = tStart; t <= tStart + tRange; t += step) {
+                let point = calculate3DCurvePoint(equation.parsed.curveType, t, equation.parsed.params);
+                if (isFinite(point.x) && isFinite(point.y) && isFinite(point.z)) {
+                    eqData.points.push({ x: point.x, y: point.y, z: point.z });
+                }
+            }
+        } else if (equation.parsed.type === '3dsurface') {
+            eqData.surfaceType = equation.parsed.surfaceType;
+            eqData.params = equation.parsed.params;
+            // 生成曲面点数据（简化版本，只取网格点）
+            eqData.points = [];
+            let uStep = 0.5, vStep = 0.5;
+            let uRange = { min: -5, max: 5 };
+            let vRange = { min: -5, max: 5 };
+
+            for (let u = uRange.min; u <= uRange.max; u += uStep) {
+                for (let v = vRange.min; v <= vRange.max; v += vStep) {
+                    let point = calculate3DSurfacePoint(equation.parsed.surfaceType, u, v, equation.parsed.params);
+                    if (isFinite(point.x) && isFinite(point.y) && isFinite(point.z)) {
+                        eqData.points.push({ x: point.x, y: point.y, z: point.z, u: u, v: v });
+                    }
+                }
+            }
+        }
+
+        exportData.equations.push(eqData);
+    });
+
+    // 转换为JSON字符串
+    let jsonStr = JSON.stringify(exportData, null, 2);
+
+    // 创建下载链接
+    let blob = new Blob([jsonStr], { type: 'application/json' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = `3d_data_${new Date().getTime()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    alert('3D数据已导出！');
+}
+
 // 切换设置菜单显示
 function toggleSettingsMenu() {
     let menu = document.getElementById('settings-menu');
@@ -2768,6 +3996,10 @@ function resetView() {
     scale = 20;
     offsetX = 400;
     offsetY = 300;
+    // 重置3D旋转角度
+    rotationX = 0.5;
+    rotationY = 0.5;
+    rotationZ = 0;
     drawCoordinateSystem();
 }
 
@@ -2913,10 +4145,19 @@ function handleMouseDown(e) {
     let rect = canvas.getBoundingClientRect();
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
-    
+
+    if (is3DMode) {
+        // 3D模式下，拖拽旋转视角
+        isRotating = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+        return;
+    }
+
     // 检查是否点击了某个方程的曲线
     let clickedEquationIndex = findEquationAtPoint(x, y);
-    
+
     if (clickedEquationIndex >= 0) {
         // 点击了某个方程，选中它并开始拖拽
         selectedEquationIndex = clickedEquationIndex;
@@ -2940,50 +4181,69 @@ function handleMouseMove(e) {
     let rect = canvas.getBoundingClientRect();
     let x = e.clientX - rect.left;
     let y = e.clientY - rect.top;
-    
+
     // 显示坐标
     let realX = (x - offsetX) / scale;
     let realY = (offsetY - y) / scale;
-    
+
     let coordDisplay = document.getElementById('coordinate-display');
     coordDisplay.textContent = `X: ${realX.toFixed(2)}, Y: ${realY.toFixed(2)}`;
     coordDisplay.style.display = 'block';
-    
+
+    // 3D模式下处理旋转
+    if (is3DMode && isRotating) {
+        let deltaX = e.clientX - lastMouseX;
+        let deltaY = e.clientY - lastMouseY;
+
+        // 更新旋转角度
+        rotationY += deltaX * 0.01;
+        rotationX += deltaY * 0.01;
+
+        // 限制X轴旋转范围，避免翻转
+        rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
+
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+
+        drawCoordinateSystem();
+        return;
+    }
+
     // 如果正在拖拽方程
     if (isDraggingEquation && selectedEquationIndex >= 0) {
         let deltaX = realX - dragStartX;
         let deltaY = realY - dragStartY;
-        
+
         updateEquationPosition(selectedEquationIndex, deltaX, deltaY);
-        
+
         dragStartX = realX;
         dragStartY = realY;
-        
+
         drawCoordinateSystem();
         return;
     }
-    
+
     // 如果没有在拖拽，检测鼠标是否悬停在方程上
-    if (!isDragging && !isDraggingEquation) {
+    if (!isDragging && !isDraggingEquation && !isRotating) {
         let hoveredEquationIndex = findEquationAtPoint(x, y);
         if (hoveredEquationIndex >= 0 || selectedEquationIndex >= 0) {
             canvas.style.cursor = 'move';
         } else {
-            canvas.style.cursor = 'crosshair';
+            canvas.style.cursor = is3DMode ? 'move' : 'crosshair';
         }
     }
-    
+
     if (!isDragging) return;
-    
+
     let deltaClientX = e.clientX - lastX;
     let deltaClientY = e.clientY - lastY;
-    
+
     offsetX += deltaClientX;
     offsetY += deltaClientY;
-    
+
     lastX = e.clientX;
     lastY = e.clientY;
-    
+
     drawCoordinateSystem();
 }
 
@@ -2991,7 +4251,8 @@ function handleMouseMove(e) {
 function handleMouseLeave() {
     isDragging = false;
     isDraggingEquation = false;
-    canvas.style.cursor = 'crosshair';
+    isRotating = false;
+    canvas.style.cursor = is3DMode ? 'move' : 'crosshair';
     document.getElementById('coordinate-display').style.display = 'none';
 }
 
@@ -2999,7 +4260,8 @@ function handleMouseLeave() {
 function handleMouseUp() {
     isDragging = false;
     isDraggingEquation = false;
-    canvas.style.cursor = 'crosshair';
+    isRotating = false;
+    canvas.style.cursor = is3DMode ? 'move' : 'crosshair';
 }
 
 // 触摸屏支持

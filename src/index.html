@@ -243,6 +243,44 @@
                                         <div class="preset-item" onclick="selectPresetFormula('integ:abs(x):-2:2')">∫_{-2}² |x| dx</div>
                                     </div>
                                 </div>
+                                <div class="preset-category" data-category="3d-curves">
+                                    <div class="preset-category-header">
+                                        <span>3D空间曲线</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:helix')">螺旋线 (Helix)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:trefoil')">三叶结 (Trefoil Knot)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:torus')">环面结 (Torus Knot)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:lissajous')">利萨茹曲线 (Lissajous)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:viviani')">维维亚尼曲线 (Viviani)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:spherical-spiral')">球面螺旋线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:conical-spiral')">圆锥螺旋线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:rose')">3D玫瑰线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:twisted-cubic')">扭曲立方曲线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:sine-wave')">3D正弦波</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:figure-eight')">8字结 (Figure Eight)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:cinquefoil')">五叶结 (Cinquefoil)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="3d-surfaces">
+                                    <div class="preset-category-header">
+                                        <span>3D曲面</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:plane')">平面 (Plane)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:sphere')">球面 (Sphere)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:cone')">圆锥面 (Cone)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:paraboloid')">抛物面 (Paraboloid)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:hyperboloid')">单叶双曲面 (Hyperboloid)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:saddle')">马鞍面 (Saddle)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:wave')">波浪面 (Wave)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:torus-surf')">环面 (Torus)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:gaussian')">高斯曲面 (Gaussian)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:ripple')">涟漪面 (Ripple)</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -298,6 +336,17 @@
             
             <div class="right-panel">
                 <div class="canvas-toolbar">
+                    <div class="mode-toggle">
+                        <button onclick="switchTo2D()" id="btn-2d" class="mode-btn active" title="2D模式">2D</button>
+                        <button onclick="switchTo3D()" id="btn-3d" class="mode-btn" title="3D模式">3D</button>
+                    </div>
+                    <div class="view-controls" id="view-controls" style="display: none;">
+                        <button onclick="toggleAutoRotate()" id="btn-autorotate" class="toolbar-btn" title="自动旋转">🔄</button>
+                        <button onclick="resetViewFront()" class="toolbar-btn" title="正视图">前</button>
+                        <button onclick="resetViewTop()" class="toolbar-btn" title="俯视图">上</button>
+                        <button onclick="resetViewSide()" class="toolbar-btn" title="侧视图">侧</button>
+                        <button onclick="export3DData()" class="toolbar-btn" title="导出3D数据">💾</button>
+                    </div>
                     <button onclick="toggleSettingsMenu()" class="toolbar-btn settings-btn" title="设置">⚙️</button>
                     <div id="settings-menu" class="settings-menu hidden">
                         <div class="settings-menu-item">
@@ -341,12 +390,23 @@
                                 <input type="number" id="y-max" value="10" onchange="updateAxisRange()">
                             </div>
                         </div>
+                        <div class="settings-menu-divider"></div>
+                        <div class="settings-menu-item" id="auto-rotate-speed-control" style="display: none;">
+                            <label>自动旋转速度:</label>
+                            <input type="range" id="auto-rotate-slider" min="1" max="10" value="5" onchange="updateAutoRotateSpeed(this.value)">
+                        </div>
+                        <div class="settings-menu-item" id="fog-control" style="display: none;">
+                            <label>
+                                <input type="checkbox" id="fog-toggle" onchange="toggleFog()"> 启用深度雾化
+                            </label>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="canvas-container">
                     <canvas id="coordinate-system" width="800" height="600"></canvas>
                     <div id="coordinate-display" class="coordinate-display"></div>
+                    <div id="legend-display" class="legend-display"></div>
                 </div>
                 
                 <div class="controls">

@@ -308,6 +308,26 @@ body.dark-mode .equation-editor .equation-formula-row {
     background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
 }
 
+/* 3D曲线公式详情 */
+.equation-editor .equation-formula-detail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+    font-family: 'Courier New', monospace;
+}
+
+body.dark-mode .equation-editor .equation-formula-detail {
+    background: linear-gradient(135deg, #6b4c7a 0%, #8b4557 100%);
+}
+
 .equation-editor .equation-params-row {
     display: flex;
     flex-wrap: wrap;
@@ -678,15 +698,58 @@ canvas:active {
 .coordinate-display {
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 20px;
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
-    padding: 8px 12px;
+    padding: 4px 8px;
     border-radius: 4px;
     font-family: monospace;
-    font-size: 14px;
+    font-size: 11px;
     pointer-events: none;
     display: none;
+}
+
+/* 图例显示 */
+.legend-display {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    border: 1px solid #ddd;
+    max-width: 120px;
+    max-height: 120px;
+    overflow-y: auto;
+    display: none;
+    z-index: 100;
+}
+
+body.dark-mode .legend-display {
+    background: rgba(30, 30, 30, 0.95);
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.legend-color {
+    width: 15px;
+    height: 2px;
+    margin-right: 5px;
+    border-radius: 1px;
+}
+
+.legend-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .controls {
@@ -706,6 +769,71 @@ body.dark-mode .controls {
     justify-content: flex-end;
     margin-bottom: 10px;
     padding: 0 10px;
+    gap: 10px;
+}
+
+/* 2D/3D模式切换按钮 */
+.mode-toggle {
+    display: flex;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+body.dark-mode .mode-toggle {
+    border-color: #555;
+}
+
+.mode-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    background-color: #f0f0f0;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mode-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.mode-btn.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+body.dark-mode .mode-btn {
+    background-color: #3d3d3d;
+    color: #aaa;
+}
+
+body.dark-mode .mode-btn:hover {
+    background-color: #4d4d4d;
+}
+
+body.dark-mode .mode-btn.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* 视图控制按钮 */
+.view-controls {
+    display: flex;
+    gap: 5px;
+    margin-right: 10px;
+}
+
+.view-controls .toolbar-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    padding: 0;
+}
+
+#btn-autorotate.active {
+    background-color: #4CAF50;
+    color: white;
 }
 
 .toolbar-btn {
@@ -800,6 +928,11 @@ body.dark-mode .settings-menu-item .range-inputs input[type="number"] {
     background-color: #3d3d3d;
     color: #e0e0e0;
     border-color: #555;
+}
+
+.settings-menu-item input[type="range"] {
+    width: 100%;
+    margin-top: 5px;
 }
 
 /* 交点颜色选择器样式 */
