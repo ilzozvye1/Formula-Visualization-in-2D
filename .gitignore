@@ -1,0 +1,16 @@
+node_modules/
+build-output/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+.env
+*.exe
+
+# Cordova files
+cordova/platforms/
+cordova/plugins/
+cordova/package-lock.json
+
+# Build artifacts
+build-test-report*.json

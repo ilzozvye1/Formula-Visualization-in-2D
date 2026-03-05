@@ -1,0 +1,90 @@
+{
+  "name": "formula-visualization-2d",
+  "version": "1.1.0",
+  "description": "公式可视化工具 - 支持2D和3D多种方程类型的可视化",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "node scripts/build/build.js",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "dist": "electron-builder --win --x64",
+    "test": "node scripts/test/test.js"
+  },
+  "keywords": [
+    "math",
+    "visualization",
+    "formula",
+    "equation",
+    "2D",
+    "graph"
+  ],
+  "author": "Formula Visualization Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.formulavisualization.2d",
+    "productName": "公式可视化",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/main.js",
+      "src/index.html",
+      "src/script.js",
+      "src/styles.css",
+      "src/preload.js",
+      "src/assets/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.ico",
+      "publisherName": "Formula Visualization Team"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "公式可视化"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "src/assets/icon.icns",
+      "category": "public.app-category.education"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "src/assets/icon.png",
+      "category": "Education"
+    }
+  },
+  "dependencies": {
+    "yauzl": "^3.2.0"
+  }
+}

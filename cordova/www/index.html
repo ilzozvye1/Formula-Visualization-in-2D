@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公式可视化</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>公式可视化 <span class="version" id="app-version"></span></h1>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="input-section">
+                    <label for="formula">输入方程:</label>
+                    <div class="input-row">
+                        <div class="preset-dropdown">
+                            <button class="preset-dropdown-btn" onclick="togglePresetMenu()">
+                                选择预设公式 ▼
+                            </button>
+                            <div id="preset-menu" class="preset-menu hidden">
+                                <div class="preset-category" data-category="linear">
+                                    <div class="preset-category-header">
+                                        <span>一次方程</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x')">y = x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x')">y = 2x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x')">y = -x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5x')">y = 0.5x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x+1')">y = x + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x+1')">y = 2x + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x+3')">y = -x + 3</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5x-2')">y = 0.5x - 2</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=3')">y = 3 (水平线)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="quadratic">
+                                    <div class="preset-category-header">
+                                        <span>二次方程</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2')">y = x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x^2')">y = -x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x^2')">y = 2x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5x^2')">y = 0.5x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2+1')">y = x² + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2-4')">y = x² - 4</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2+2x+1')">y = x² + 2x + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2-4x+3')">y = x² - 4x + 3</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x^2+4')">y = -x² + 4</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x^2-3x+1')">y = 2x² - 3x + 1</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="3d-surface">
+                                    <div class="preset-category-header">
+                                        <span>三维曲面</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('z=x+y')">z = x + y (平面)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=2x+3y')">z = 2x + 3y (平面)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=x^2+y^2')">z = x² + y² (抛物面)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=x^2-y^2')">z = x² - y² (双曲抛物面)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=sin(x)+cos(y)')">z = sin(x) + cos(y)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=sin(x*y)')">z = sin(xy)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=exp(-(x^2+y^2))')">z = e^(-(x²+y²)) (高斯)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=sqrt(x^2+y^2)')">z = √(x²+y²) (圆锥)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=cos(sqrt(x^2+y^2))')">z = cos(√(x²+y²)) (波纹)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('z=x*y')">z = xy (鞍面)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <input type="text" id="formula" value="y=2x+1" placeholder="输入方程，如: y=2x+1 或 z=x^2+y^2">
+                        <input type="color" id="line-color" value="#ff0000" title="选择线条颜色">
+                        <select id="line-style" title="选择线条样式">
+                            <option value="solid">实线</option>
+                            <option value="dashed">虚线</option>
+                            <option value="dotted">点线</option>
+                        </select>
+                        <button onclick="addFormula()">添加方程</button>
+                    </div>
+                </div>
+                
+                <div class="equations-list">
+                    <h3>方程列表</h3>
+                    <div id="equations-container"></div>
+                    <div class="equations-actions">
+                        <button onclick="showAllEquations()" class="action-btn show-all-btn">全部显示</button>
+                        <button onclick="hideAllEquations()" class="action-btn hide-all-btn">全部隐藏</button>
+                        <button onclick="clearAllEquations()" class="action-btn clear-btn">清空所有</button>
+                    </div>
+                </div>
+                
+                <div class="transform-section" id="transform-section">
+                    <h3>变换控制 <span class="transform-hint">(选中方程后可用)</span></h3>
+                    <div class="transform-controls">
+                        <div class="transform-group">
+                            <label>平移 X:</label>
+                            <input type="range" id="translate-x" min="-5" max="5" step="0.1" value="0" onchange="updateTransform()">
+                            <span id="translate-x-val">0</span>
+                        </div>
+                        <div class="transform-group">
+                            <label>平移 Y:</label>
+                            <input type="range" id="translate-y" min="-5" max="5" step="0.1" value="0" onchange="updateTransform()">
+                            <span id="translate-y-val">0</span>
+                        </div>
+                        <div class="transform-group" id="translate-z-group" style="display:none;">
+                            <label>平移 Z:</label>
+                            <input type="range" id="translate-z" min="-5" max="5" step="0.1" value="0" onchange="updateTransform()">
+                            <span id="translate-z-val">0</span>
+                        </div>
+                        <div class="transform-group">
+                            <label>缩放:</label>
+                            <input type="range" id="scale-factor" min="0.1" max="3" step="0.1" value="1" onchange="updateTransform()">
+                            <span id="scale-val">1</span>
+                        </div>
+                        <div class="transform-group" id="rotate-z-group">
+                            <label>旋转 Z:</label>
+                            <input type="range" id="rotate-z" min="0" max="360" step="1" value="0" onchange="updateTransform()">
+                            <span id="rotate-z-val">0°</span>
+                        </div>
+                        <div class="transform-group" id="rotate-x-group" style="display:none;">
+                            <label>旋转 X:</label>
+                            <input type="range" id="rotate-x" min="0" max="360" step="1" value="0" onchange="updateTransform()">
+                            <span id="rotate-x-val">0°</span>
+                        </div>
+                        <div class="transform-group" id="rotate-y-group" style="display:none;">
+                            <label>旋转 Y:</label>
+                            <input type="range" id="rotate-y" min="0" max="360" step="1" value="0" onchange="updateTransform()">
+                            <span id="rotate-y-val">0°</span>
+                        </div>
+                        <button onclick="resetTransform()" class="reset-transform-btn">重置变换</button>
+                    </div>
+                </div>
+                
+                <div class="export-section">
+                    <button onclick="exportImage()" class="export-btn">导出图像</button>
+                    <button onclick="resetView()" class="reset-btn">重置视图</button>
+                    <button onclick="toggleHelp()" class="help-btn">帮助</button>
+                </div>
+                
+                <div id="help-panel" class="help-panel hidden">
+                    <h4>快捷键</h4>
+                    <ul>
+                        <li><kbd>Ctrl+A</kbd> - 聚焦输入框</li>
+                        <li><kbd>Ctrl+E</kbd> - 导出图像</li>
+                        <li><kbd>Ctrl+R</kbd> - 重置视图</li>
+                        <li><kbd>Delete</kbd> - 删除选中方程</li>
+                        <li><kbd>Esc</kbd> - 取消选中/关闭菜单</li>
+                        <li><kbd>方向键</kbd> - 微调方程位置</li>
+                        <li><kbd>Shift+方向键</kbd> - 快速微调</li>
+                    </ul>
+                    <h4>鼠标操作</h4>
+                    <ul>
+                        <li>滚轮 - 缩放坐标系</li>
+                        <li>拖动 - 移动坐标系</li>
+                        <li>点击方程 - 选中方程</li>
+                        <li>双击空白 - 取消选中</li>
+                        <li>拖动方程 - 移动方程</li>
+                    </ul>
+                    <h4>3D视图操作</h4>
+                    <ul>
+                        <li>左键拖动 - 旋转视角</li>
+                        <li>右键拖动 - 平移视角</li>
+                        <li>滚轮 - 缩放</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="view-tabs">
+                    <button class="tab-btn active" data-view="2d" onclick="switchView('2d')">2D视图</button>
+                    <button class="tab-btn" data-view="3d" onclick="switchView('3d')">3D视图</button>
+                </div>
+                
+                <div class="canvas-toolbar">
+                    <button onclick="toggleSettingsMenu()" class="toolbar-btn settings-btn" title="设置">⚙️</button>
+                    <div id="settings-menu" class="settings-menu hidden">
+                        <div class="settings-menu-item">
+                            <label>
+                                <input type="checkbox" id="show-grid" checked onchange="toggleGrid()">
+                                显示网格线
+                            </label>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>
+                                <input type="checkbox" id="dark-mode" onchange="toggleDarkMode()">
+                                深色模式
+                            </label>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>
+                                <input type="checkbox" id="show-intersections" checked onchange="toggleIntersections()">
+                                显示交点
+                            </label>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>
+                                交点颜色:
+                                <input type="color" id="intersection-color" value="#ff00ff" onchange="updateIntersectionColor()" title="选择交点颜色">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="view-container">
+                    <div id="view-2d" class="view-panel active">
+                        <div class="canvas-container">
+                            <canvas id="coordinate-system" width="800" height="600"></canvas>
+                            <div id="coordinate-display" class="coordinate-display"></div>
+                        </div>
+                        <div class="controls">
+                            <p>鼠标滚轮：缩放坐标系 | 鼠标拖动：移动坐标系 | 鼠标移动：显示坐标</p>
+                        </div>
+                    </div>
+                    
+                    <div id="view-3d" class="view-panel">
+                        <div class="canvas-container" id="threejs-container">
+                        </div>
+                        <div class="controls">
+                            <p>左键拖动：旋转视角 | 右键拖动：平移视角 | 滚轮：缩放</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

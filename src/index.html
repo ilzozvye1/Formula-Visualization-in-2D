@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D公式可视化</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>公式可视化 <span class="version" id="app-version"></span></h1>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="input-section">
+                    <label for="formula">输入方程:</label>
+                    <div class="input-row">
+                        <div class="preset-dropdown">
+                            <button class="preset-dropdown-btn" onclick="togglePresetMenu()">
+                                选择预设公式 ▼
+                            </button>
+                            <div id="preset-menu" class="preset-menu hidden">
+                                <div class="preset-category" data-category="linear">
+                                    <div class="preset-category-header">
+                                        <span>一次方程</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x')">y = x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x')">y = 2x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x')">y = -x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5x')">y = 0.5x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x+1')">y = x + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x+1')">y = 2x + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x+3')">y = -x + 3</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5x-2')">y = 0.5x - 2</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=3')">y = 3 (水平线)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="quadratic">
+                                    <div class="preset-category-header">
+                                        <span>二次方程</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2')">y = x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x^2')">y = -x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x^2')">y = 2x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5x^2')">y = 0.5x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2+1')">y = x² + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2-4')">y = x² - 4</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2+2x+1')">y = x² + 2x + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2-4x+3')">y = x² - 4x + 3</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x^2+4')">y = -x² + 4</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x^2-3x+1')">y = 2x² - 3x + 1</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="power">
+                                    <div class="preset-category-header">
+                                        <span>幂函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^3')">y = x³</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^4')">y = x⁴</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^5')">y = x⁵</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-x^3')">y = -x³</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2x^3')">y = 2x³</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^0.5')">y = x^0.5 (√x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^(1/3)')">y = x^(1/3) (∛x)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="exponential">
+                                    <div class="preset-category-header">
+                                        <span>指数函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=exp(x)')">y = e^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2^x')">y = 2^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=10^x')">y = 10^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5^x')">y = 0.5^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-exp(x)')">y = -e^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2exp(x)')">y = 2e^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=exp(-x)')">y = e^(-x)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="logarithmic">
+                                    <div class="preset-category-header">
+                                        <span>对数函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=log(x)')">y = ln(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=log10(x)')">y = log₁₀(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-log(x)')">y = -ln(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2log(x)')">y = 2ln(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=log(x)+1')">y = ln(x) + 1</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="trigonometric">
+                                    <div class="preset-category-header">
+                                        <span>三角函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(x)')">y = sin(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=cos(x)')">y = cos(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=tan(x)')">y = tan(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2sin(x)')">y = 2sin(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5sin(x)')">y = 0.5sin(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(2x)')">y = sin(2x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(0.5x)')">y = sin(0.5x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(x+1)')">y = sin(x+1)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(x)+1')">y = sin(x) + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2cos(x)')">y = 2cos(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=cos(2x)')">y = cos(2x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=cos(x)-1')">y = cos(x) - 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2tan(x)')">y = 2tan(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=tan(0.5x)')">y = tan(0.5x)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="inverse-trig">
+                                    <div class="preset-category-header">
+                                        <span>反三角函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=arcsin(x)')">y = arcsin(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=arccos(x)')">y = arccos(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=arctan(x)')">y = arctan(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2arcsin(x)')">y = 2arcsin(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2arctan(x)')">y = 2arctan(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=arctan(x)+1')">y = arctan(x) + 1</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="hyperbolic">
+                                    <div class="preset-category-header">
+                                        <span>双曲函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sinh(x)')">y = sinh(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=cosh(x)')">y = cosh(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=tanh(x)')">y = tanh(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2sinh(x)')">y = 2sinh(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2cosh(x)')">y = 2cosh(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=0.5tanh(x)')">y = 0.5tanh(x)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="absolute">
+                                    <div class="preset-category-header">
+                                        <span>绝对值函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=abs(x)')">y = |x|</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-abs(x)')">y = -|x|</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2abs(x)')">y = 2|x|</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=abs(x)+1')">y = |x| + 1</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=abs(x-2)')">y = |x - 2|</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=abs(2x)')">y = |2x|</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="rounding">
+                                    <div class="preset-category-header">
+                                        <span>取整函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=floor(x)')">y = floor(x) (向下取整)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=ceil(x)')">y = ceil(x) (向上取整)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=round(x)')">y = round(x) (四舍五入)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2floor(x)')">y = 2floor(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=floor(x)+1')">y = floor(x) + 1</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="special">
+                                    <div class="preset-category-header">
+                                        <span>特殊函数</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('y=1/x')">y = 1/x (双曲线)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=-1/x')">y = -1/x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2/x')">y = 2/x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=1/(x-1)')">y = 1/(x-1)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(x)/x')">y = sin(x)/x (Sinc函数)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x*sin(x)')">y = x·sin(x) (振荡放大)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(x)/x^0.5')">y = sin(x)/√x (衰减振荡)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=exp(-x^2)')">y = e^(-x²) (高斯曲线)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=2*exp(-x^2)')">y = 2e^(-x²)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=exp(-abs(x))')">y = e^(-|x|) (拉普拉斯)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=1/(1+exp(-x))')">y = 1/(1+e^(-x)) (Sigmoid)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=log(x)/log(2)')">y = log₂(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=abs(sin(x))')">y = |sin(x)| (全波整流)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=abs(cos(x))')">y = |cos(x)|</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2*sin(1/x)')">y = x²·sin(1/x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x*exp(-x)')">y = x·e^(-x) (Gamma核)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^2*exp(-x)')">y = x²·e^(-x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=sin(x^2)')">y = sin(x²) (啁啾信号)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=cos(x^2)')">y = cos(x²)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=tanh(x)')">y = tanh(x) (S型曲线)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=1/(1+x^2)')">y = 1/(1+x²) (洛伦兹曲线)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x/(1+abs(x))')">y = x/(1+|x|) (软饱和)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^3-x')">y = x³ - x (双稳态)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('y=x^3-3x')">y = x³ - 3x</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="derivative">
+                                    <div class="preset-category-header">
+                                        <span>微分 (导数曲线)</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:x^2')">d/dx(x²) = 2x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:x^3')">d/dx(x³) = 3x²</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:sin(x)')">d/dx(sin(x)) = cos(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:cos(x)')">d/dx(cos(x)) = -sin(x)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:exp(x)')">d/dx(e^x) = e^x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:log(x)')">d/dx(ln(x)) = 1/x</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:x^2+2x+1')">d/dx(x²+2x+1)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:sin(2x)')">d/dx(sin(2x))</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:x*sin(x)')">d/dx(x·sin(x))</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('deriv:exp(-x^2)')">d/dx(e^(-x²))</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="integral">
+                                    <div class="preset-category-header">
+                                        <span>积分 (定积分面积)</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:x:0:1')">∫₀¹ x dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:x^2:0:2')">∫₀² x² dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:sin(x):0:3.14159')">∫₀^π sin(x) dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:cos(x):-1.5708:1.5708')">∫_{-π/2}^{π/2} cos(x) dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:exp(x):0:1')">∫₀¹ e^x dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:1/x:1:2')">∫₁² 1/x dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:x^3:-1:1')">∫_{-1}¹ x³ dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:sin(x):0:6.28318')">∫₀^{2π} sin(x) dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:exp(-x^2):-1:1')">∫_{-1}¹ e^(-x²) dx</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('integ:abs(x):-2:2')">∫_{-2}² |x| dx</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="3d-curves">
+                                    <div class="preset-category-header">
+                                        <span>3D空间曲线</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:helix')">螺旋线 (Helix)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:trefoil')">三叶结 (Trefoil Knot)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:torus')">环面结 (Torus Knot)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:lissajous')">利萨茹曲线 (Lissajous)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:viviani')">维维亚尼曲线 (Viviani)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:spherical-spiral')">球面螺旋线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:conical-spiral')">圆锥螺旋线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:rose')">3D玫瑰线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:twisted-cubic')">扭曲立方曲线</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:sine-wave')">3D正弦波</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:figure-eight')">8字结 (Figure Eight)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3d:cinquefoil')">五叶结 (Cinquefoil)</div>
+                                    </div>
+                                </div>
+                                <div class="preset-category" data-category="3d-surfaces">
+                                    <div class="preset-category-header">
+                                        <span>3D曲面</span>
+                                        <span class="preset-arrow">▶</span>
+                                    </div>
+                                    <div class="preset-submenu hidden">
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:plane')">平面 (Plane)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:sphere')">球面 (Sphere)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:cone')">圆锥面 (Cone)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:paraboloid')">抛物面 (Paraboloid)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:hyperboloid')">单叶双曲面 (Hyperboloid)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:saddle')">马鞍面 (Saddle)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:wave')">波浪面 (Wave)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:torus-surf')">环面 (Torus)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:gaussian')">高斯曲面 (Gaussian)</div>
+                                        <div class="preset-item" onclick="selectPresetFormula('3dsurf:ripple')">涟漪面 (Ripple)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <input type="text" id="formula" value="y=2x+1" placeholder="输入方程，如: y=2x+1">
+                        <input type="color" id="line-color" value="#ff0000" title="选择线条颜色">
+                        <select id="line-style" title="选择线条样式">
+                            <option value="solid">实线</option>
+                            <option value="dashed">虚线</option>
+                            <option value="dotted">点线</option>
+                        </select>
+                        <button onclick="addFormula()">添加方程</button>
+                    </div>
+                </div>
+                
+                <div class="equations-list">
+                    <h3>方程列表</h3>
+                    <div id="equations-container"></div>
+                    <div class="equations-actions">
+                        <button onclick="showAllEquations()" class="action-btn show-all-btn">全部显示</button>
+                        <button onclick="hideAllEquations()" class="action-btn hide-all-btn">全部隐藏</button>
+                        <button onclick="clearAllEquations()" class="action-btn clear-btn">清空所有</button>
+                    </div>
+                </div>
+                
+                <div class="export-section">
+                    <button onclick="exportImage()" class="export-btn">导出图像</button>
+                    <button onclick="resetView()" class="reset-btn">重置视图</button>
+                    <button onclick="toggleHelp()" class="help-btn">帮助</button>
+                </div>
+                
+                <div id="help-panel" class="help-panel hidden">
+                    <h4>快捷键</h4>
+                    <ul>
+                        <li><kbd>Ctrl+A</kbd> - 聚焦输入框</li>
+                        <li><kbd>Ctrl+E</kbd> - 导出图像</li>
+                        <li><kbd>Ctrl+R</kbd> - 重置视图</li>
+                        <li><kbd>Delete</kbd> - 删除选中方程</li>
+                        <li><kbd>Esc</kbd> - 取消选中/关闭菜单</li>
+                        <li><kbd>方向键</kbd> - 微调方程位置</li>
+                        <li><kbd>Shift+方向键</kbd> - 快速微调</li>
+                    </ul>
+                    <h4>鼠标操作</h4>
+                    <ul>
+                        <li>滚轮 - 缩放坐标系</li>
+                        <li>拖动 - 移动坐标系</li>
+                        <li>点击方程 - 选中方程</li>
+                        <li>双击空白 - 取消选中</li>
+                        <li>拖动方程 - 移动方程</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="canvas-toolbar">
+                    <div class="mode-toggle">
+                        <button onclick="switchTo2D()" id="btn-2d" class="mode-btn active" title="2D模式">2D</button>
+                        <button onclick="switchTo3D()" id="btn-3d" class="mode-btn" title="3D模式">3D</button>
+                    </div>
+
+                    <button onclick="toggleSettingsMenu()" class="toolbar-btn settings-btn" title="设置">⚙️</button>
+                    <div id="settings-menu" class="settings-menu hidden">
+                        <div class="settings-menu-item">
+                            <label>
+                                <input type="checkbox" id="show-grid" checked onchange="toggleGrid()">
+                                显示网格线
+                            </label>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>
+                                <input type="checkbox" id="dark-mode" onchange="toggleDarkMode()">
+                                深色模式
+                            </label>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>
+                                <input type="checkbox" id="show-intersections" checked onchange="toggleIntersections()">
+                                显示交点
+                            </label>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>
+                                交点颜色:
+                                <input type="color" id="intersection-color" value="#ff00ff" onchange="updateIntersectionColor()" title="选择交点颜色">
+                            </label>
+                        </div>
+                        <div class="settings-menu-divider"></div>
+                        <div class="settings-menu-item">
+                            <label>X轴范围:</label>
+                            <div class="range-inputs">
+                                <input type="number" id="x-min" value="-10" onchange="updateAxisRange()">
+                                <span>到</span>
+                                <input type="number" id="x-max" value="10" onchange="updateAxisRange()">
+                            </div>
+                        </div>
+                        <div class="settings-menu-item">
+                            <label>Y轴范围:</label>
+                            <div class="range-inputs">
+                                <input type="number" id="y-min" value="-10" onchange="updateAxisRange()">
+                                <span>到</span>
+                                <input type="number" id="y-max" value="10" onchange="updateAxisRange()">
+                            </div>
+                        </div>
+                        <div class="settings-menu-divider"></div>
+                        <div class="settings-menu-item" id="auto-rotate-speed-control" style="display: none;">
+                            <label>自动旋转速度:</label>
+                            <input type="range" id="auto-rotate-slider" min="1" max="10" value="5" onchange="updateAutoRotateSpeed(this.value)">
+                        </div>
+                        <div class="settings-menu-item" id="fog-control" style="display: none;">
+                            <label>
+                                <input type="checkbox" id="fog-toggle" onchange="toggleFog()"> 启用深度雾化
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="canvas-container">
+                    <canvas id="coordinate-system" width="800" height="600"></canvas>
+                    <div id="coordinate-display" class="coordinate-display"></div>
+                    <div class="view-controls-canvas" id="view-controls-canvas" style="display: none;">
+                        <button onclick="toggleAutoRotate()" id="btn-autorotate" class="toolbar-btn" title="自动旋转">🔄</button>
+                        <button onclick="resetViewFront()" class="toolbar-btn" title="正视图">前</button>
+                        <button onclick="resetViewTop()" class="toolbar-btn" title="俯视图">上</button>
+                        <button onclick="resetViewSide()" class="toolbar-btn" title="侧视图">侧</button>
+                        <button onclick="import3DData()" class="toolbar-btn" title="导入3D数据">📂</button>
+                        <button onclick="export3DData()" class="toolbar-btn" title="导出3D数据">💾</button>
+                    </div>
+                    <div id="legend-display" class="legend-display"></div>
+                </div>
+                
+                <div class="controls">
+                    <p>鼠标滚轮：缩放坐标系 | 鼠标拖动：移动坐标系 | 鼠标移动：显示坐标</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公式解析测试 - 2D公式可视化</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e7f3ff;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .error-detail {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 30px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #output {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>2D公式可视化 - 公式解析测试</h1>
+    
+    <div class="test-container">
+        <button onclick="runTests()">运行测试</button>
+        <div id="output"></div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="test.js"></script>
+    <script>
+        function runTests() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p style="text-align:center;">测试中...</p>';
+            
+            // 清空之前的控制台输出
+            console.clear();
+            
+            // 运行测试
+            const results = [];
+            let passed = 0;
+            let failed = 0;
+            
+            testCases.forEach((testCase, index) => {
+                try {
+                    let result = parseFormula(testCase.input);
+                    
+                    if (!result) {
+                        results.push({
+                            index: index + 1,
+                            testCase,
+                            success: false,
+                            error: '解析返回null'
+                        });
+                        failed++;
+                    } else if (result.type !== testCase.expectedType) {
+                        results.push({
+                            index: index + 1,
+                            testCase,
+                            success: false,
+                            error: `类型不匹配: 期望${testCase.expectedType}, 实际${result.type}`
+                        });
+                        failed++;
+                    } else {
+                        results.push({
+                            index: index + 1,
+                            testCase,
+                            success: true,
+                            result
+                        });
+                        passed++;
+                    }
+                } catch (error) {
+                    results.push({
+                        index: index + 1,
+                        testCase,
+                        success: false,
+                        error: error.message
+                    });
+                    failed++;
+                }
+            });
+            
+            // 显示结果
+            let html = '';
+            
+            // 显示每个测试结果
+            results.forEach(r => {
+                const className = r.success ? 'test-pass' : 'test-fail';
+                const icon = r.success ? '✅' : '❌';
+                html += `<div class="test-result ${className}">
+                    <strong>${icon} 测试 ${r.index}/${testCases.length}: ${r.testCase.description}</strong><br>
+                    输入: ${r.testCase.description}<br>
+                    ${r.success ? `类型: ${r.result.type}` : `错误: ${r.error}`}
+                </div>`;
+            });
+            
+            // 显示总结
+            const percentage = ((passed / testCases.length) * 100).toFixed(1);
+            html += `<div class="summary">
+                <strong>测试结果总结</strong><br>
+                总测试数: ${testCases.length} | 
+                通过: ${passed} | 
+                失败: ${failed} | 
+                通过率: ${percentage}%
+            </div>`;
+            
+            // 显示错误详情
+            const errors = results.filter(r => !r.success);
+            if (errors.length > 0) {
+                html += `<div class="error-detail">
+                    <strong>错误详情:</strong><br><br>`;
+                errors.forEach((err, idx) => {
+                    html += `${idx + 1}. <strong>${err.testCase.description}</strong><br>
+                    &nbsp;&nbsp;&nbsp;输入: ${err.testCase.input}<br>
+                    &nbsp;&nbsp;&nbsp;期望类型: ${err.testCase.expectedType}<br>
+                    &nbsp;&nbsp;&nbsp;错误: ${err.error}<br><br>`;
+                });
+                html += `</div>`;
+            }
+            
+            output.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
