@@ -1,25 +1,25 @@
-# 2D公式可视化
+# 公式可视化
 
-![版本](https://img.shields.io/badge/版本-1.0.0-blue.svg)
-![构建日期](https://img.shields.io/badge/构建-2025--01--09-green.svg)
+![版本](https://img.shields.io/badge/版本-1.1.0-blue.svg)
+![构建日期](https://img.shields.io/badge/构建-2026--03--04-green.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-一个功能强大的2D公式可视化工具，可以在二维坐标系中展示多种类型的数学方程。
+一个功能强大的公式可视化工具，支持在二维和三维坐标系中展示多种类型的数学方程。
 
 ---
 
 ## 📋 版本信息
 
-- **当前版本**: v1.0.0
-- **构建日期**: 2025-01-09
-- **应用名称**: 2D公式可视化
+- **当前版本**: v1.1.0
+- **构建日期**: 2026-03-04
+- **应用名称**: 公式可视化
 - **开发者**: Formula Visualization Team
 
 ---
 
 ## ✨ 功能特性
 
-### 支持的方程类型
+### 2D 支持的方程类型
 - ✅ **一次方程**（线性方程）：例如 `y=2x+1`
 - ✅ **二次方程**：例如 `y=x²+2x+1`
 - ✅ **幂函数**：例如 `y=x³`, `y=√x`, `y=1/x`
@@ -34,18 +34,51 @@
 - ✅ **微分函数**：例如 `deriv:x^2` 或 `y=deriv(x^2)`
 - ✅ **积分函数**：例如 `integ:x^2:0:1` 或 `y=integ(x^2,0,1)`
 
+### 3D 支持的空间曲线
+- 🌀 **螺旋线** (Helix)
+- 🎀 **三叶结** (Trefoil Knot)
+- 🍩 **环面结** (Torus Knot)
+- 📊 **利萨茹曲线** (Lissajous)
+- ⭕ **维维亚尼曲线** (Viviani)
+- 🌐 **球面螺旋线**
+- 🔺 **圆锥螺旋线**
+- 🌹 **3D玫瑰线**
+- 📈 **扭曲立方曲线**
+- 〰️ **3D正弦波**
+- ♾️ **8字结** (Figure Eight)
+- 🌸 **五叶结** (Cinquefoil)
+
+### 3D 支持的曲面
+- 📐 **平面** (Plane)
+- 🔵 **球面** (Sphere)
+- 🔺 **圆锥面** (Cone)
+- 🥣 **抛物面** (Paraboloid)
+- 🛸 **单叶双曲面** (Hyperboloid)
+- 🏔️ **马鞍面** (Saddle)
+- 🌊 **波浪面** (Wave)
+- 🍩 **环面** (Torus)
+- 🔔 **高斯曲面** (Gaussian)
+- 💧 **涟漪面** (Ripple)
+
 ### 核心功能
 - 📊 **多方程绘制**：支持同时绘制多条方程
 - 🎨 **自定义样式**：每条方程可选择不同颜色和线条样式（实线/虚线/点线）
 - 👁️ **显示控制**：支持单独显示/隐藏每个方程
-- 🖱️ **交互操作**：
+- 🖱️ **2D 交互操作**：
   - 鼠标滚轮缩放坐标系
   - 鼠标拖动移动坐标系
   - 点击方程选中并拖拽移动
   - 方向键微调方程位置
+- 🖱️ **3D 交互操作**：
+  - 鼠标拖拽旋转视角
+  - 自动旋转展示
+  - 正视图/俯视图/侧视图快速切换
+  - 深度雾化效果
 - 💾 **数据持久化**：方程自动保存到本地存储
 - 🌙 **深色模式**：支持浅色/深色主题切换
-- 📤 **导出功能**：支持导出图像为PNG格式
+- 📤 **导出功能**：
+  - 支持导出图像为PNG格式
+  - 支持导出3D数据为JSON格式
 - ⌨️ **快捷键支持**：丰富的键盘快捷键
 
 ---
@@ -63,7 +96,7 @@ python -m http.server 8080
 
 ### Windows 桌面版
 1. 下载 Windows 安装包或便携版
-2. 运行 `2D公式可视化 Setup 1.0.0.exe` 或 `2D公式可视化 1.0.0.exe`
+2. 运行 `公式可视化 Setup 1.1.0.exe` 或 `公式可视化 1.1.0.exe`
 3. 享受原生应用体验
 
 ### Android 移动版
@@ -86,7 +119,7 @@ python -m http.server 8080
 | `方向键` | 微调方程位置 |
 | `Shift + 方向键` | 快速微调 |
 | `鼠标滚轮` | 缩放坐标系 |
-| `鼠标拖动` | 移动坐标系 |
+| `鼠标拖动` | 移动坐标系（2D）/ 旋转视角（3D） |
 
 ---
 
@@ -124,6 +157,22 @@ integ:x^2:0:1          # x² 在 [0,1] 的定积分
 y=integ(x^2,0,1)       # 同上，另一种写法
 ```
 
+### 3D 空间曲线
+```
+3d:helix               # 螺旋线
+3d:trefoil             # 三叶结
+3d:torus               # 环面结
+3d:sphere              # 球面
+```
+
+### 3D 曲面
+```
+3dsurf:plane           # 平面
+3dsurf:sphere          # 球面
+3dsurf:cone            # 圆锥面
+3dsurf:wave            # 波浪面
+```
+
 ---
 
 ## 📦 打包指南
@@ -159,25 +208,39 @@ npm run build
 ## 📁 项目结构
 
 ```
-Formula Visualization in 2D/
-├── index.html              # 主页面
-├── script.js               # 主要逻辑（含版本号 v1.0.0）
-├── styles.css              # 样式文件
-├── package.json            # Electron 配置
-├── main.js                 # Electron 主进程
-├── preload.js              # Electron 预加载脚本
-├── assets/                 # 图标资源
-├── cordova/                # Cordova 移动版配置
-│   ├── config.xml          # Cordova 配置
-│   ├── package.json        # Cordova 依赖
-│   └── www/                # 移动端资源
-├── README.md               # 本文件
-└── BUILD_GUIDE.md          # 打包指南
+Formula Visualization/
+├── src/
+│   ├── index.html              # 主页面
+│   ├── script.js               # 主要逻辑
+│   ├── styles.css              # 样式文件
+│   ├── main.js                 # Electron 主进程
+│   ├── preload.js              # Electron 预加载脚本
+│   └── assets/                 # 图标资源
+├── cordova/                    # Cordova 移动版配置
+│   ├── config.xml              # Cordova 配置
+│   ├── package.json            # Cordova 依赖
+│   └── www/                    # 移动端资源
+├── docs/
+│   ├── README.md               # 本文件
+│   └── BUILD_GUIDE.md          # 打包指南
+├── package.json                # Electron 配置
+└── CHANGELOG.md                # 更新日志
 ```
 
 ---
 
 ## 📝 更新日志
+
+### v1.1.0 (2026-03-04)
+- ✨ 添加 3D 可视化功能
+- ✨ 支持 12 种 3D 空间曲线
+- ✨ 支持 10 种 3D 曲面
+- ✨ 添加 3D 自动旋转和视角控制
+- ✨ 添加深度雾化效果
+- ✨ 添加图例显示
+- ✨ 支持导出 3D 数据
+- ✨ 优化 UI 布局
+- ✨ 修复已知问题
 
 ### v1.0.0 (2025-01-09)
 - ✨ 初始版本发布
@@ -221,5 +284,5 @@ Formula Visualization in 2D/
 
 <p align="center">
   <strong>Made with ❤️ by Formula Visualization Team</strong><br>
-  <sub>Version 1.0.0 | Build 2025-01-09</sub>
+  <sub>Version 1.1.0 | Build 2026-03-04</sub>
 </p>

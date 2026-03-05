@@ -3,7 +3,7 @@ const path = require('path');
 
 // 版本信息
 const APP_VERSION = '1.1.0';
-const APP_NAME = '2D公式可视化';
+const APP_NAME = '公式可视化';
 
 let mainWindow;
 

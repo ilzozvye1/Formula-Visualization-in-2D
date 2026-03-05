@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>2D公式可视化 <span class="version" id="app-version"></span></h1>
+        <h1>公式可视化 <span class="version" id="app-version"></span></h1>
         
         <div class="main-content">
             <div class="left-panel">
@@ -340,13 +340,7 @@
                         <button onclick="switchTo2D()" id="btn-2d" class="mode-btn active" title="2D模式">2D</button>
                         <button onclick="switchTo3D()" id="btn-3d" class="mode-btn" title="3D模式">3D</button>
                     </div>
-                    <div class="view-controls" id="view-controls" style="display: none;">
-                        <button onclick="toggleAutoRotate()" id="btn-autorotate" class="toolbar-btn" title="自动旋转">🔄</button>
-                        <button onclick="resetViewFront()" class="toolbar-btn" title="正视图">前</button>
-                        <button onclick="resetViewTop()" class="toolbar-btn" title="俯视图">上</button>
-                        <button onclick="resetViewSide()" class="toolbar-btn" title="侧视图">侧</button>
-                        <button onclick="export3DData()" class="toolbar-btn" title="导出3D数据">💾</button>
-                    </div>
+
                     <button onclick="toggleSettingsMenu()" class="toolbar-btn settings-btn" title="设置">⚙️</button>
                     <div id="settings-menu" class="settings-menu hidden">
                         <div class="settings-menu-item">
@@ -406,6 +400,14 @@
                 <div class="canvas-container">
                     <canvas id="coordinate-system" width="800" height="600"></canvas>
                     <div id="coordinate-display" class="coordinate-display"></div>
+                    <div class="view-controls-canvas" id="view-controls-canvas" style="display: none;">
+                        <button onclick="toggleAutoRotate()" id="btn-autorotate" class="toolbar-btn" title="自动旋转">🔄</button>
+                        <button onclick="resetViewFront()" class="toolbar-btn" title="正视图">前</button>
+                        <button onclick="resetViewTop()" class="toolbar-btn" title="俯视图">上</button>
+                        <button onclick="resetViewSide()" class="toolbar-btn" title="侧视图">侧</button>
+                        <button onclick="import3DData()" class="toolbar-btn" title="导入3D数据">📂</button>
+                        <button onclick="export3DData()" class="toolbar-btn" title="导出3D数据">💾</button>
+                    </div>
                     <div id="legend-display" class="legend-display"></div>
                 </div>
                 

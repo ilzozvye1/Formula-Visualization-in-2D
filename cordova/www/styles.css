@@ -212,7 +212,6 @@ body.dark-mode .equation-item.selected {
     background-color: #d32f2f;
 }
 
-/* 可见性切换按钮 */
 .equation-item .visibility-btn {
     width: 20px;
     height: 20px;
@@ -239,7 +238,6 @@ body.dark-mode .equation-item .visibility-btn:hover {
     opacity: 0.5;
 }
 
-/* 隐藏的方程项样式 */
 .equation-item.hidden-equation {
     opacity: 0.6;
 }
@@ -282,7 +280,6 @@ body.dark-mode .equation-item .equation-input {
     box-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
 }
 
-/* 方程编辑器样式 - 垂直紧凑布局 */
 .equation-editor {
     display: flex;
     flex-direction: column;
@@ -462,7 +459,6 @@ body.dark-mode .equation-item .params-editor input[type="number"] {
     background-color: #da190b;
 }
 
-/* 方程列表操作按钮 */
 .equations-actions {
     display: flex;
     gap: 8px;
@@ -699,7 +695,6 @@ body.dark-mode .controls {
     color: #aaa;
 }
 
-/* 画布工具栏 */
 .canvas-toolbar {
     position: relative;
     display: flex;
@@ -735,7 +730,6 @@ body.dark-mode .toolbar-btn:hover {
     background-color: #4d4d4d;
 }
 
-/* 设置菜单 */
 .settings-menu {
     position: absolute;
     top: 100%;
@@ -802,7 +796,6 @@ body.dark-mode .settings-menu-item .range-inputs input[type="number"] {
     border-color: #555;
 }
 
-/* 交点颜色选择器样式 */
 .settings-menu-item input[type="color"] {
     width: 40px;
     height: 28px;
@@ -829,7 +822,6 @@ body.dark-mode .settings-menu-divider {
     background-color: #555;
 }
 
-/* 预设公式二级菜单样式 */
 .preset-dropdown {
     position: relative;
     flex: 1;
@@ -978,6 +970,194 @@ body.dark-mode .preset-item:hover {
     border-left-color: #4CAF50;
 }
 
+.view-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 10px;
+    background-color: #e0e0e0;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+}
+
+body.dark-mode .view-tabs {
+    background-color: #2d2d2d;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+}
+
+.tab-btn.active {
+    background-color: white;
+    color: #4CAF50;
+    border-bottom-color: #4CAF50;
+}
+
+body.dark-mode .tab-btn {
+    color: #aaa;
+}
+
+body.dark-mode .tab-btn:hover {
+    background-color: rgba(129, 199, 132, 0.1);
+    color: #81c784;
+}
+
+body.dark-mode .tab-btn.active {
+    background-color: #3d3d3d;
+    color: #81c784;
+    border-bottom-color: #81c784;
+}
+
+.view-container {
+    position: relative;
+    background-color: white;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+body.dark-mode .view-container {
+    background-color: #2d2d2d;
+}
+
+.view-panel {
+    display: none;
+}
+
+.view-panel.active {
+    display: block;
+}
+
+#threejs-container {
+    width: 800px;
+    height: 600px;
+    margin: 0 auto;
+    background-color: #1a1a1a;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+body.dark-mode #threejs-container {
+    border-color: #555;
+}
+
+.transform-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+body.dark-mode .transform-section {
+    background-color: #3d3d3d;
+    border-color: #555;
+}
+
+.transform-section h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.transform-hint {
+    font-size: 12px;
+    color: #999;
+    font-weight: normal;
+}
+
+.transform-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.transform-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.transform-group label {
+    min-width: 70px;
+    font-size: 13px;
+    color: #555;
+}
+
+body.dark-mode .transform-group label {
+    color: #bbb;
+}
+
+.transform-group input[type="range"] {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #ddd;
+    border-radius: 3px;
+    outline: none;
+}
+
+body.dark-mode .transform-group input[type="range"] {
+    background: #555;
+}
+
+.transform-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.transform-group input[type="range"]::-webkit-slider-thumb:hover {
+    background: #45a049;
+}
+
+.transform-group span {
+    min-width: 40px;
+    text-align: right;
+    font-size: 13px;
+    font-family: monospace;
+    color: #333;
+}
+
+body.dark-mode .transform-group span {
+    color: #e0e0e0;
+}
+
+.reset-transform-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.reset-transform-btn:hover {
+    background-color: #e68a00;
+}
+
 @media (max-width: 900px) {
     .main-content {
         flex-direction: column;
@@ -1002,5 +1182,10 @@ body.dark-mode .preset-item:hover {
     
     .preset-menu {
         max-height: 300px;
+    }
+    
+    #threejs-container {
+        width: 100%;
+        height: 400px;
     }
 }

@@ -836,6 +836,41 @@ body.dark-mode .mode-btn.active {
     color: white;
 }
 
+/* 画布上的视图控制按钮 */
+.view-controls-canvas {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    display: flex;
+    gap: 3px;
+    z-index: 101;
+}
+
+.view-controls-canvas .toolbar-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+body.dark-mode .view-controls-canvas .toolbar-btn {
+    background: rgba(50, 50, 50, 0.95);
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+.view-controls-canvas .toolbar-btn:hover {
+    background: #f0f0f0;
+}
+
+body.dark-mode .view-controls-canvas .toolbar-btn:hover {
+    background: #444;
+}
+
 .toolbar-btn {
     width: 36px;
     height: 36px;

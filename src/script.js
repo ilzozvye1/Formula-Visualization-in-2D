@@ -1,6 +1,6 @@
 // 版本号
 const APP_VERSION = '1.1.0';
-const APP_NAME = '2D公式可视化';
+const APP_NAME = '公式可视化';
 // 构建日期动态生成（格式：YYYY-MM-DD）
 const APP_BUILD_DATE = '2026-03-04';
 
@@ -42,6 +42,68 @@ let autoRotateSpeed = 0.005;
 let fogEnabled = false;
 let fogDensity = 0.02;
 let fogColor = darkMode ? '#1a1a1a' : '#ffffff';
+
+// 历史记录相关变量
+let historyStack = [];
+let historyIndex = -1;
+const MAX_HISTORY_SIZE = 50;
+
+// 保存当前状态到历史记录
+function saveHistory() {
+    // 删除当前位置之后的历史记录
+    historyStack = historyStack.slice(0, historyIndex + 1);
+    
+    // 保存当前状态
+    const state = {
+        equations: JSON.parse(JSON.stringify(equations)),
+        scale: scale,
+        offsetX: offsetX,
+        offsetY: offsetY,
+        rotationX: rotationX,
+        rotationY: rotationY,
+        rotationZ: rotationZ
+    };
+    
+    historyStack.push(state);
+    
+    // 限制历史记录大小
+    if (historyStack.length > MAX_HISTORY_SIZE) {
+        historyStack.shift();
+    } else {
+        historyIndex++;
+    }
+}
+
+// 撤销
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        restoreState(historyStack[historyIndex]);
+    }
+}
+
+// 重做
+function redo() {
+    if (historyIndex < historyStack.length - 1) {
+        historyIndex++;
+        restoreState(historyStack[historyIndex]);
+    }
+}
+
+// 恢复状态
+function restoreState(state) {
+    equations = JSON.parse(JSON.stringify(state.equations));
+    scale = state.scale;
+    offsetX = state.offsetX;
+    offsetY = state.offsetY;
+    rotationX = state.rotationX;
+    rotationY = state.rotationY;
+    rotationZ = state.rotationZ;
+    
+    saveEquations();
+    updateEquationsList();
+    drawCoordinateSystem();
+}
 
 // 根据缩放级别确定小数位数
 function getDecimalPlaces(scale) {
@@ -177,38 +239,54 @@ function handleDoubleClick(e) {
 function handleKeyDown(e) {
     // Delete键删除选中的方程
     if (e.key === 'Delete' && selectedEquationIndex >= 0) {
+        saveHistory();
         removeEquation(selectedEquationIndex);
         return;
     }
-    
+
+    // Ctrl/Cmd + Z: 撤销
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+    }
+
+    // Ctrl/Cmd + Y 或 Ctrl/Cmd + Shift + Z: 重做
+    if (((e.ctrlKey || e.metaKey) && e.key === 'y') ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')) {
+        e.preventDefault();
+        redo();
+        return;
+    }
+
     // Ctrl/Cmd + A: 添加方程（聚焦到输入框）
     if ((e.ctrlKey || e.metaKey) && e.key === 'a' && e.target.tagName !== 'INPUT') {
         e.preventDefault();
         document.getElementById('formula').focus();
         return;
     }
-    
+
     // Ctrl/Cmd + E: 导出图像
     if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
         e.preventDefault();
         exportImage();
         return;
     }
-    
+
     // Ctrl/Cmd + R: 重置视图
     if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
         resetView();
         return;
     }
-    
+
     // Ctrl/Cmd + 0: 重置缩放
     if ((e.ctrlKey || e.metaKey) && e.key === '0') {
         e.preventDefault();
         resetView();
         return;
     }
-    
+
     // Escape: 取消选中
     if (e.key === 'Escape') {
         if (selectedEquationIndex >= 0) {
@@ -221,10 +299,11 @@ function handleKeyDown(e) {
         document.getElementById('settings-menu').classList.add('hidden');
         return;
     }
-    
+
     // 方向键微调选中的方程
     if (selectedEquationIndex >= 0 && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
+        saveHistory();
         const step = e.shiftKey ? 0.5 : 0.1; // Shift键加速
         switch (e.key) {
             case 'ArrowUp':
@@ -1480,6 +1559,7 @@ function addFormula() {
         visible: true
     };
     
+    saveHistory();
     equations.push(equation);
     saveEquations();
     updateEquationsList();
@@ -3142,93 +3222,6 @@ function updateEquationFromInput(index, newFormula) {
     drawCoordinateSystem();
 }
 
-// 生成参数编辑器
-function generateParamsEditor(equation, index) {
-    let parsed = equation.parsed;
-    let editor = '<div class="params-editor">';
-    
-    switch (parsed.type) {
-        case 'linear':
-            editor += `
-                <label>斜率: <input type="number" step="0.1" value="${parsed.slope}" 
-                       onchange="updateEquationParam(${index}, 'slope', this.value)"></label>
-                <label>截距: <input type="number" step="0.1" value="${parsed.intercept}" 
-                       onchange="updateEquationParam(${index}, 'intercept', this.value)"></label>
-            `;
-            break;
-            
-        case 'quadratic':
-            editor += `
-                <label>a: <input type="number" step="0.1" value="${parsed.a}" 
-                       onchange="updateEquationParam(${index}, 'a', this.value)"></label>
-                <label>b: <input type="number" step="0.1" value="${parsed.b}" 
-                       onchange="updateEquationParam(${index}, 'b', this.value)"></label>
-                <label>c: <input type="number" step="0.1" value="${parsed.c}" 
-                       onchange="updateEquationParam(${index}, 'c', this.value)"></label>
-            `;
-            break;
-            
-        case 'power':
-            editor += `
-                <label>系数: <input type="number" step="0.1" value="${parsed.coefficient}" 
-                       onchange="updateEquationParam(${index}, 'coefficient', this.value)"></label>
-                <label>指数: <input type="number" step="0.1" value="${parsed.power}" 
-                       onchange="updateEquationParam(${index}, 'power', this.value)"></label>
-            `;
-            if (parsed.verticalShift !== undefined) {
-                editor += `
-                    <label>垂直位移: <input type="number" step="0.1" value="${parsed.verticalShift}" 
-                           onchange="updateEquationParam(${index}, 'verticalShift', this.value)"></label>
-                `;
-            }
-            break;
-            
-        case 'exponential':
-            if (parsed.base !== 'e') {
-                editor += `
-                    <label>底数: <input type="number" step="0.1" value="${parsed.base}" 
-                           onchange="updateEquationParam(${index}, 'base', this.value)"></label>
-                `;
-            }
-            if (parsed.verticalShift !== undefined) {
-                editor += `
-                    <label>垂直位移: <input type="number" step="0.1" value="${parsed.verticalShift}" 
-                           onchange="updateEquationParam(${index}, 'verticalShift', this.value)"></label>
-                `;
-            }
-            break;
-            
-        case 'logarithmic':
-            if (parsed.verticalShift !== undefined) {
-                editor += `
-                    <label>垂直位移: <input type="number" step="0.1" value="${parsed.verticalShift}" 
-                           onchange="updateEquationParam(${index}, 'verticalShift', this.value)"></label>
-                `;
-            }
-            break;
-            
-        case 'trigonometric':
-            editor += `
-                <label>振幅: <input type="number" step="0.1" value="${parsed.amplitude}" 
-                       onchange="updateEquationParam(${index}, 'amplitude', this.value)"></label>
-                <label>频率: <input type="number" step="0.1" value="${parsed.frequency}" 
-                       onchange="updateEquationParam(${index}, 'frequency', this.value)"></label>
-                <label>相位: <input type="number" step="0.1" value="${parsed.phase}" 
-                       onchange="updateEquationParam(${index}, 'phase', this.value)"></label>
-            `;
-            if (parsed.verticalShift !== undefined) {
-                editor += `
-                    <label>垂直位移: <input type="number" step="0.1" value="${parsed.verticalShift}" 
-                           onchange="updateEquationParam(${index}, 'verticalShift', this.value)"></label>
-                `;
-            }
-            break;
-    }
-    
-    editor += '</div>';
-    return editor;
-}
-
 // 更新方程参数
 function updateEquationParam(index, param, value) {
     let equation = equations[index];
@@ -3300,17 +3293,6 @@ function update3DSurfaceParam(index, param, value) {
 
     // 保存并更新
     saveEquations();
-    updateEquationsList();
-    drawCoordinateSystem();
-}
-
-// 选中/取消选中方程
-function selectEquation(index, checked) {
-    if (checked) {
-        selectedEquationIndex = index;
-    } else {
-        selectedEquationIndex = -1;
-    }
     updateEquationsList();
     drawCoordinateSystem();
 }
@@ -3587,6 +3569,7 @@ function hideAllEquations() {
 
 // 清空所有方程
 function clearAllEquations() {
+    saveHistory();
     equations = [];
     saveEquations();
     updateEquationsList();
@@ -3634,7 +3617,7 @@ document.addEventListener('click', function(e) {
     let btn = document.querySelector('.preset-dropdown-btn');
     
     // 如果点击的不是预设按钮且不是预设菜单内部，则关闭菜单
-    if (menu && !menu.classList.contains('hidden') && 
+    if (menu && btn && !menu.classList.contains('hidden') && 
         !menu.contains(e.target) && 
         !btn.contains(e.target)) {
         menu.classList.add('hidden');
@@ -3671,11 +3654,15 @@ function switchTo2D() {
     is3DMode = false;
     document.getElementById('btn-2d').classList.add('active');
     document.getElementById('btn-3d').classList.remove('active');
-    document.getElementById('view-controls').style.display = 'none';
+    let viewControlsCanvas = document.getElementById('view-controls-canvas');
+    if (viewControlsCanvas) viewControlsCanvas.style.display = 'none';
     let autoRotateControl = document.getElementById('auto-rotate-speed-control');
     if (autoRotateControl) autoRotateControl.style.display = 'none';
     let fogControl = document.getElementById('fog-control');
     if (fogControl) fogControl.style.display = 'none';
+    // 2D模式下，图例与坐标显示同一水平位置
+    let legendDisplay = document.getElementById('legend-display');
+    if (legendDisplay) legendDisplay.style.top = '10px';
     canvas.style.cursor = 'crosshair';
     stopAutoRotate();
     drawCoordinateSystem();
@@ -3686,11 +3673,15 @@ function switchTo3D() {
     is3DMode = true;
     document.getElementById('btn-2d').classList.remove('active');
     document.getElementById('btn-3d').classList.add('active');
-    document.getElementById('view-controls').style.display = 'flex';
+    let viewControlsCanvas = document.getElementById('view-controls-canvas');
+    if (viewControlsCanvas) viewControlsCanvas.style.display = 'flex';
     let autoRotateControl = document.getElementById('auto-rotate-speed-control');
     if (autoRotateControl) autoRotateControl.style.display = 'block';
     let fogControl = document.getElementById('fog-control');
     if (fogControl) fogControl.style.display = 'block';
+    // 3D模式下，图例位于3D操作按钮下方
+    let legendDisplay = document.getElementById('legend-display');
+    if (legendDisplay) legendDisplay.style.top = '45px';
     canvas.style.cursor = 'move';
     drawCoordinateSystem();
 }
@@ -3834,6 +3825,79 @@ function resetViewSide() {
     drawCoordinateSystem();
 }
 
+// 导入3D数据
+function import3DData() {
+    // 创建文件输入元素
+    let input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        let file = e.target.files[0];
+        if (!file) return;
+
+        let reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                let data = JSON.parse(event.target.result);
+
+                // 验证数据格式
+                if (!data.equations || !Array.isArray(data.equations)) {
+                    alert('无效的3D数据文件格式');
+                    return;
+                }
+
+                // 保存当前状态到历史记录
+                saveHistory();
+
+                // 清空当前方程
+                equations = [];
+
+                // 恢复方程
+                data.equations.forEach(function(eqData) {
+                    if (eqData.type === '3dcurve' || eqData.type === '3dsurface') {
+                        equations.push({
+                            formula: eqData.formula || '',
+                            parsed: {
+                                type: eqData.type,
+                                curveType: eqData.curveType,
+                                surfaceType: eqData.surfaceType,
+                                name: eqData.name,
+                                formula: eqData.formula,
+                                params: eqData.params || {},
+                                paramLabels: eqData.paramLabels || {}
+                            },
+                            color: eqData.color || '#ff0000',
+                            style: eqData.style || 'solid',
+                            visible: true
+                        });
+                    }
+                });
+
+                // 恢复视图设置（可选）
+                if (data.viewSettings) {
+                    scale = data.viewSettings.scale || 20;
+                    offsetX = data.viewSettings.offsetX || 400;
+                    offsetY = data.viewSettings.offsetY || 300;
+                    rotationX = data.viewSettings.rotationX || 0.5;
+                    rotationY = data.viewSettings.rotationY || 0.5;
+                    rotationZ = data.viewSettings.rotationZ || 0;
+                }
+
+                // 保存并更新
+                saveEquations();
+                updateEquationsList();
+                drawCoordinateSystem();
+
+                alert('3D数据导入成功！');
+            } catch (error) {
+                alert('导入失败：' + error.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
 // 导出3D数据为JSON格式
 function export3DData() {
     // 收集所有3D曲线和曲面的数据
@@ -3933,7 +3997,7 @@ document.addEventListener('click', function(e) {
     let btn = document.querySelector('.settings-btn');
     
     // 如果点击的不是设置按钮且不是设置菜单内部，则关闭菜单
-    if (!menu.classList.contains('hidden') && 
+    if (menu && btn && !menu.classList.contains('hidden') && 
         !menu.contains(e.target) && 
         !btn.contains(e.target)) {
         menu.classList.add('hidden');
@@ -4006,12 +4070,19 @@ function resetView() {
 // 处理鼠标滚轮事件
 function handleWheel(e) {
     e.preventDefault();
-    
+
     let scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    scale *= scaleFactor;
-    
-    scale = Math.max(5, Math.min(100, scale));
-    
+
+    if (is3DMode) {
+        // 3D模式下，滚轮缩放整体视图
+        scale *= scaleFactor;
+        scale = Math.max(5, Math.min(200, scale));
+    } else {
+        // 2D模式下，滚轮缩放坐标系
+        scale *= scaleFactor;
+        scale = Math.max(5, Math.min(100, scale));
+    }
+
     drawCoordinateSystem();
 }
 
