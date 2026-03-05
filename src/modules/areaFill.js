@@ -1,442 +1,585 @@
 /**
  * 区域填充模块
- * @module modules/areaFill
+ * 功能：
+ * 1. 积分区域填充
+ * 2. 不等式区域显示
+ * 3. 自定义填充颜色
+ * 4. 填充透明度控制
+ * 5. 多区域交集/并集
  */
 
-import { mathToCanvas } from '../utils/mathUtils.js';
-
-/**
- * 区域填充类
- */
 export class AreaFill {
-    constructor(ctx, state) {
+    constructor(ctx) {
         this.ctx = ctx;
-        this.state = state;
+        this.fillRules = ['evenodd', 'nonzero'];
     }
 
     /**
-     * 填充积分区域
-     * @param {Object} equation - 方程对象
-     * @param {number} lowerBound - 下限
-     * @param {number} upperBound - 上限
-     * @param {string} fillColor - 填充颜色
-     * @param {number} alpha - 透明度 (0-1)
+     * 填充函数下方区域
+     * @param {Function} fn - 函数 y = f(x)
+     * @param {Object} bounds - 边界 {xMin, xMax, yMin, yMax}
+     * @param {Object} options - 填充选项
      */
-    fillIntegralArea(equation, lowerBound, upperBound, fillColor = '#4CAF50', alpha = 0.3) {
-        const { scale, offsetX, offsetY } = this.state;
-        const { parsed } = equation;
+    fillBelowFunction(fn, bounds, options = {}) {
+        const {
+            fillColor = 'rgba(66, 153, 225, 0.3)',
+            strokeColor = 'rgba(66, 153, 225, 0.8)',
+            strokeWidth = 2,
+            baseline = 0
+        } = options;
 
-        // 计算填充区域的点
-        const points = [];
-        const step = 0.1;
+        const { xMin, xMax } = bounds;
+        const step = (xMax - xMin) / 500;
 
-        for (let x = lowerBound; x <= upperBound; x += step) {
-            const y = this.calculateY(parsed, x);
-            if (y !== null && isFinite(y)) {
-                const canvasPoint = mathToCanvas(x, y, offsetX, offsetY, scale);
-                points.push(canvasPoint);
+        this.ctx.fillStyle = fillColor;
+        this.ctx.beginPath();
+
+        // 起始点
+        this.ctx.moveTo(xMin, baseline);
+
+        // 绘制函数曲线
+        for (let x = xMin; x <= xMax; x += step) {
+            const y = fn(x);
+            if (!isNaN(y) && isFinite(y)) {
+                this.ctx.lineTo(x, y);
             }
         }
 
-        if (points.length < 2) return;
-
-        // 创建填充路径
-        this.ctx.beginPath();
-        
-        // 起点（下限处，y=0）
-        const startPoint = mathToCanvas(lowerBound, 0, offsetX, offsetY, scale);
-        this.ctx.moveTo(startPoint.x, startPoint.y);
-
-        // 沿曲线上移
-        points.forEach(point => {
-            this.ctx.lineTo(point.x, point.y);
-        });
-
-        // 终点（上限处，y=0）
-        const endPoint = mathToCanvas(upperBound, 0, offsetX, offsetY, scale);
-        this.ctx.lineTo(endPoint.x, endPoint.y);
-
+        // 闭合路径到基线
+        this.ctx.lineTo(xMax, baseline);
+        this.ctx.lineTo(xMin, baseline);
         this.ctx.closePath();
 
-        // 设置填充样式
-        const color = this.hexToRgba(fillColor, alpha);
-        this.ctx.fillStyle = color;
+        // 填充
         this.ctx.fill();
 
         // 绘制边界线
-        this.ctx.strokeStyle = fillColor;
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
+        if (strokeColor) {
+            this.ctx.strokeStyle = strokeColor;
+            this.ctx.lineWidth = strokeWidth;
+            this.ctx.beginPath();
+            for (let x = xMin; x <= xMax; x += step) {
+                const y = fn(x);
+                if (!isNaN(y) && isFinite(y)) {
+                    if (x === xMin) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    /**
+     * 填充函数上方区域
+     * @param {Function} fn - 函数 y = f(x)
+     * @param {Object} bounds - 边界 {xMin, xMax, yMin, yMax}
+     * @param {Object} options - 填充选项
+     */
+    fillAboveFunction(fn, bounds, options = {}) {
+        const {
+            fillColor = 'rgba(236, 112, 99, 0.3)',
+            strokeColor = 'rgba(236, 112, 99, 0.8)',
+            strokeWidth = 2,
+            topBoundary = bounds.yMax
+        } = options;
+
+        const { xMin, xMax } = bounds;
+        const step = (xMax - xMin) / 500;
+
+        this.ctx.fillStyle = fillColor;
+        this.ctx.beginPath();
+
+        // 起始点（左上）
+        this.ctx.moveTo(xMin, topBoundary);
+
+        // 绘制函数曲线（从右到左）
+        for (let x = xMax; x >= xMin; x -= step) {
+            const y = fn(x);
+            if (!isNaN(y) && isFinite(y)) {
+                this.ctx.lineTo(x, y);
+            }
+        }
+
+        // 闭合路径
+        this.ctx.lineTo(xMin, topBoundary);
+        this.ctx.closePath();
+
+        this.ctx.fill();
+
+        // 绘制边界线
+        if (strokeColor) {
+            this.ctx.strokeStyle = strokeColor;
+            this.ctx.lineWidth = strokeWidth;
+            this.ctx.beginPath();
+            for (let x = xMin; x <= xMax; x += step) {
+                const y = fn(x);
+                if (!isNaN(y) && isFinite(y)) {
+                    if (x === xMin) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    /**
+     * 填充两个函数之间的区域
+     * @param {Function} fn1 - 第一个函数
+     * @param {Function} fn2 - 第二个函数
+     * @param {Object} bounds - 边界
+     * @param {Object} options - 填充选项
+     */
+    fillBetweenFunctions(fn1, fn2, bounds, options = {}) {
+        const {
+            fillColor = 'rgba(155, 89, 182, 0.3)',
+            strokeWidth = 0
+        } = options;
+
+        const { xMin, xMax } = bounds;
+        const step = (xMax - xMin) / 500;
+
+        this.ctx.fillStyle = fillColor;
+        this.ctx.beginPath();
+
+        // 绘制第一个函数（从左到右）
+        let first = true;
+        for (let x = xMin; x <= xMax; x += step) {
+            const y = fn1(x);
+            if (!isNaN(y) && isFinite(y)) {
+                if (first) {
+                    this.ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    this.ctx.lineTo(x, y);
+                }
+            }
+        }
+
+        // 绘制第二个函数（从右到左）
+        for (let x = xMax; x >= xMin; x -= step) {
+            const y = fn2(x);
+            if (!isNaN(y) && isFinite(y)) {
+                this.ctx.lineTo(x, y);
+            }
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill();
     }
 
     /**
      * 填充不等式区域
-     * @param {Object} equation - 方程对象
-     * @param {string} inequality - 不等式类型 ('>', '<', '>=', '<=')
-     * @param {string} fillColor - 填充颜色
-     * @param {number} alpha - 透明度
+     * @param {Function} inequality - 不等式函数，返回布尔值
+     * @param {Object} bounds - 边界
+     * @param {Object} options - 填充选项
      */
-    fillInequalityArea(equation, inequality = '>', fillColor = '#2196F3', alpha = 0.3) {
-        const { canvas } = this.ctx;
-        const { scale, offsetX, offsetY } = this.state;
-        const { parsed } = equation;
+    fillInequalityRegion(inequality, bounds, options = {}) {
+        const {
+            fillColor = 'rgba(46, 204, 113, 0.3)',
+            resolution = 100
+        } = options;
 
-        // 获取画布边界对应的数学坐标
-        const xMin = (0 - offsetX) / scale;
-        const xMax = (canvas.width - offsetX) / scale;
-        const yMin = (offsetY - canvas.height) / scale;
-        const yMax = offsetY / scale;
+        const { xMin, xMax, yMin, yMax } = bounds;
+        const xStep = (xMax - xMin) / resolution;
+        const yStep = (yMax - yMin) / resolution;
 
-        // 创建填充路径
-        this.ctx.beginPath();
-        let isFirstPoint = true;
+        this.ctx.fillStyle = fillColor;
 
-        // 采样点
-        const step = 0.5;
-        const fillPoints = [];
-
-        for (let x = xMin; x <= xMax; x += step) {
-            const curveY = this.calculateY(parsed, x);
-            if (curveY === null || !isFinite(curveY)) continue;
-
-            // 根据不等式确定填充范围
-            let yStart, yEnd;
-            switch (inequality) {
-                case '>':
-                case '>=':
-                    yStart = curveY;
-                    yEnd = yMax;
-                    break;
-                case '<':
-                case '<=':
-                    yStart = yMin;
-                    yEnd = curveY;
-                    break;
-                default:
-                    continue;
-            }
-
-            // 限制在画布范围内
-            yStart = Math.max(yStart, yMin);
-            yEnd = Math.min(yEnd, yMax);
-
-            if (yStart < yEnd) {
-                const topPoint = mathToCanvas(x, yEnd, offsetX, offsetY, scale);
-                const bottomPoint = mathToCanvas(x, yStart, offsetX, offsetY, scale);
-                
-                fillPoints.push({
-                    x: topPoint.x,
-                    yTop: topPoint.y,
-                    yBottom: bottomPoint.y
-                });
-            }
-        }
-
-        if (fillPoints.length < 2) return;
-
-        // 绘制填充区域
-        this.ctx.beginPath();
-        
-        // 上边界
-        fillPoints.forEach((point, index) => {
-            if (index === 0) {
-                this.ctx.moveTo(point.x, point.yTop);
-            } else {
-                this.ctx.lineTo(point.x, point.yTop);
-            }
-        });
-
-        // 下边界（反向）
-        for (let i = fillPoints.length - 1; i >= 0; i--) {
-            this.ctx.lineTo(fillPoints[i].x, fillPoints[i].yBottom);
-        }
-
-        this.ctx.closePath();
-
-        // 填充
-        const color = this.hexToRgba(fillColor, alpha);
-        this.ctx.fillStyle = color;
-        this.ctx.fill();
-    }
-
-    /**
-     * 填充两条曲线之间的区域
-     * @param {Object} equation1 - 第一条方程
-     * @param {Object} equation2 - 第二条方程
-     * @param {string} fillColor - 填充颜色
-     * @param {number} alpha - 透明度
-     */
-    fillBetweenCurves(equation1, equation2, fillColor = '#FF9800', alpha = 0.3) {
-        const { canvas } = this.ctx;
-        const { scale, offsetX, offsetY } = this.state;
-
-        // 获取画布边界
-        const xMin = (0 - offsetX) / scale;
-        const xMax = (canvas.width - offsetX) / scale;
-
-        // 计算两条曲线的交点
-        const intersections = this.findIntersections(equation1, equation2, xMin, xMax);
-        
-        // 添加边界点
-        const segments = [xMin, ...intersections, xMax];
-
-        // 在每个区间内填充
-        for (let i = 0; i < segments.length - 1; i++) {
-            const xStart = segments[i];
-            const xEnd = segments[i + 1];
-            
-            this.fillCurveSegment(equation1, equation2, xStart, xEnd, fillColor, alpha);
-        }
-    }
-
-    /**
-     * 填充曲线段之间的区域
-     * @param {Object} equation1 - 第一条方程
-     * @param {Object} equation2 - 第二条方程
-     * @param {number} xStart - 起始X
-     * @param {number} xEnd - 结束X
-     * @param {string} fillColor - 填充颜色
-     * @param {number} alpha - 透明度
-     */
-    fillCurveSegment(equation1, equation2, xStart, xEnd, fillColor, alpha) {
-        const { scale, offsetX, offsetY } = this.state;
-        const step = 0.1;
-
-        const points1 = [];
-        const points2 = [];
-
-        // 采样两条曲线
-        for (let x = xStart; x <= xEnd; x += step) {
-            const y1 = this.calculateY(equation1.parsed, x);
-            const y2 = this.calculateY(equation2.parsed, x);
-
-            if (y1 !== null && y2 !== null && isFinite(y1) && isFinite(y2)) {
-                points1.push(mathToCanvas(x, y1, offsetX, offsetY, scale));
-                points2.push(mathToCanvas(x, y2, offsetX, offsetY, scale));
-            }
-        }
-
-        if (points1.length < 2 || points2.length < 2) return;
-
-        // 创建填充路径
-        this.ctx.beginPath();
-
-        // 第一条曲线（上边界）
-        points1.forEach((point, index) => {
-            if (index === 0) {
-                this.ctx.moveTo(point.x, point.y);
-            } else {
-                this.ctx.lineTo(point.x, point.y);
-            }
-        });
-
-        // 第二条曲线（下边界，反向）
-        for (let i = points2.length - 1; i >= 0; i--) {
-            this.ctx.lineTo(points2[i].x, points2[i].y);
-        }
-
-        this.ctx.closePath();
-
-        // 填充
-        const color = this.hexToRgba(fillColor, alpha);
-        this.ctx.fillStyle = color;
-        this.ctx.fill();
-    }
-
-    /**
-     * 查找两条曲线的交点
-     * @param {Object} equation1 - 第一条方程
-     * @param {Object} equation2 - 第二条方程
-     * @param {number} xMin - 最小X
-     * @param {number} xMax - 最大X
-     * @returns {Array} 交点X坐标数组
-     */
-    findIntersections(equation1, equation2, xMin, xMax) {
-        const intersections = [];
-        const step = 0.01;
-        let lastDiff = null;
-
-        for (let x = xMin; x <= xMax; x += step) {
-            const y1 = this.calculateY(equation1.parsed, x);
-            const y2 = this.calculateY(equation2.parsed, x);
-
-            if (y1 === null || y2 === null) continue;
-
-            const diff = y1 - y2;
-
-            // 检查符号变化（表示有交点）
-            if (lastDiff !== null && Math.sign(diff) !== Math.sign(lastDiff)) {
-                // 使用二分法精确定位交点
-                const intersectionX = this.refineIntersection(
-                    equation1.parsed, 
-                    equation2.parsed, 
-                    x - step, 
-                    x
-                );
-                if (intersectionX !== null) {
-                    intersections.push(intersectionX);
+        for (let x = xMin; x < xMax; x += xStep) {
+            for (let y = yMin; y < yMax; y += yStep) {
+                if (inequality(x, y)) {
+                    this.ctx.fillRect(x, y, xStep, yStep);
                 }
             }
-
-            lastDiff = diff;
-        }
-
-        return intersections;
-    }
-
-    /**
-     * 精确化交点位置
-     * @param {Object} parsed1 - 第一条方程解析结果
-     * @param {Object} parsed2 - 第二条方程解析结果
-     * @param {number} x1 - 左边界
-     * @param {number} x2 - 右边界
-     * @returns {number|null} 精确的交点X坐标
-     */
-    refineIntersection(parsed1, parsed2, x1, x2) {
-        const tolerance = 0.0001;
-        let left = x1;
-        let right = x2;
-
-        for (let i = 0; i < 20; i++) { // 最多迭代20次
-            const mid = (left + right) / 2;
-            const y1Left = this.calculateY(parsed1, left);
-            const y2Left = this.calculateY(parsed2, left);
-            const y1Mid = this.calculateY(parsed1, mid);
-            const y2Mid = this.calculateY(parsed2, mid);
-
-            if (y1Left === null || y2Left === null || y1Mid === null || y2Mid === null) {
-                return null;
-            }
-
-            const diffLeft = y1Left - y2Left;
-            const diffMid = y1Mid - y2Mid;
-
-            if (Math.abs(diffMid) < tolerance) {
-                return mid;
-            }
-
-            if (Math.sign(diffLeft) === Math.sign(diffMid)) {
-                left = mid;
-            } else {
-                right = mid;
-            }
-        }
-
-        return (left + right) / 2;
-    }
-
-    /**
-     * 计算Y值
-     * @param {Object} parsed - 解析后的方程
-     * @param {number} x - X坐标
-     * @returns {number|null} Y坐标
-     */
-    calculateY(parsed, x) {
-        try {
-            switch (parsed.type) {
-                case 'linear':
-                    return parsed.slope * x + parsed.intercept;
-                case 'quadratic':
-                    return parsed.a * x * x + parsed.b * x + parsed.c;
-                case 'power':
-                    return parsed.coefficient * Math.pow(x, parsed.power);
-                case 'exponential':
-                    return parsed.base === 'e' 
-                        ? Math.exp(x) 
-                        : Math.pow(parsed.base, x);
-                case 'trigonometric':
-                    const angle = parsed.frequency * x + parsed.phase;
-                    switch (parsed.func) {
-                        case 'sin': return parsed.amplitude * Math.sin(angle);
-                        case 'cos': return parsed.amplitude * Math.cos(angle);
-                        case 'tan': return parsed.amplitude * Math.tan(angle);
-                        default: return 0;
-                    }
-                default:
-                    // 尝试使用通用表达式
-                    if (parsed.expression) {
-                        return this.evaluateExpression(parsed.expression, x);
-                    }
-                    return null;
-            }
-        } catch (e) {
-            return null;
         }
     }
 
     /**
-     * 计算表达式
-     * @param {string} expression - 表达式
-     * @param {number} x - X值
-     * @returns {number|null} 结果
+     * 填充积分区域（使用梯形法则可视化）
+     * @param {Function} fn - 被积函数
+     * @param {number} a - 积分下限
+     * @param {number} b - 积分上限
+     * @param {Object} options - 填充选项
      */
-    evaluateExpression(expression, x) {
-        try {
-            // 简单的表达式求值（实际应该使用更安全的解析器）
-            const sanitized = expression
-                .replace(/x/g, `(${x})`)
-                .replace(/\^/g, '**')
-                .replace(/sin\(/g, 'Math.sin(')
-                .replace(/cos\(/g, 'Math.cos(')
-                .replace(/tan\(/g, 'Math.tan(')
-                .replace(/sqrt\(/g, 'Math.sqrt(')
-                .replace(/log\(/g, 'Math.log(')
-                .replace(/exp\(/g, 'Math.exp(')
-                .replace(/abs\(/g, 'Math.abs(')
-                .replace(/pi/g, 'Math.PI')
-                .replace(/e(?![a-z])/g, 'Math.E');
+    fillIntegralRegion(fn, a, b, options = {}) {
+        const {
+            fillColor = 'rgba(241, 196, 15, 0.3)',
+            strokeColor = 'rgba(241, 196, 15, 0.8)',
+            n = 50, // 梯形数量
+            showTrapezoids = true
+        } = options;
 
-            return new Function('Math', `return ${sanitized}`)(Math);
-        } catch (e) {
-            return null;
-        }
-    }
+        const h = (b - a) / n;
 
-    /**
-     * 将十六进制颜色转换为RGBA
-     * @param {string} hex - 十六进制颜色
-     * @param {number} alpha - 透明度
-     * @returns {string} RGBA颜色
-     */
-    hexToRgba(hex, alpha) {
-        // 移除#号
-        hex = hex.replace('#', '');
-
-        // 处理简写形式
-        if (hex.length === 3) {
-            hex = hex.split('').map(c => c + c).join('');
-        }
-
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
-    /**
-     * 绘制填充图例
-     * @param {string} label - 标签
-     * @param {string} color - 颜色
-     * @param {number} x - X位置
-     * @param {number} y - Y位置
-     */
-    drawFillLegend(label, color, x, y) {
-        // 绘制颜色块
-        this.ctx.fillStyle = this.hexToRgba(color, 0.5);
-        this.ctx.fillRect(x, y, 20, 12);
-
-        // 绘制边框
-        this.ctx.strokeStyle = color;
+        this.ctx.fillStyle = fillColor;
+        this.ctx.strokeStyle = strokeColor;
         this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(x, y, 20, 12);
 
-        // 绘制文字
-        this.ctx.fillStyle = this.state.darkMode ? '#e0e0e0' : '#333';
-        this.ctx.font = '12px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(label, x + 25, y + 6);
+        for (let i = 0; i < n; i++) {
+            const x0 = a + i * h;
+            const x1 = x0 + h;
+            const y0 = fn(x0);
+            const y1 = fn(x1);
+
+            if (!isNaN(y0) && !isNaN(y1) && isFinite(y0) && isFinite(y1)) {
+                // 绘制梯形
+                this.ctx.beginPath();
+                this.ctx.moveTo(x0, 0);
+                this.ctx.lineTo(x0, y0);
+                this.ctx.lineTo(x1, y1);
+                this.ctx.lineTo(x1, 0);
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                if (showTrapezoids) {
+                    this.ctx.stroke();
+                }
+            }
+        }
+
+        // 绘制函数曲线
+        if (strokeColor) {
+            this.ctx.strokeStyle = strokeColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            const step = (b - a) / 200;
+            for (let x = a; x <= b; x += step) {
+                const y = fn(x);
+                if (!isNaN(y) && isFinite(y)) {
+                    if (x === a) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    /**
+     * 填充极坐标区域
+     * @param {Function} rFn - 极径函数 r = f(θ)
+     * @param {number} thetaMin - 起始角度
+     * @param {number} thetaMax - 结束角度
+     * @param {Object} options - 填充选项
+     */
+    fillPolarRegion(rFn, thetaMin, thetaMax, options = {}) {
+        const {
+            fillColor = 'rgba(231, 76, 60, 0.3)',
+            strokeColor = 'rgba(231, 76, 60, 0.8)',
+            centerX = 0,
+            centerY = 0
+        } = options;
+
+        const step = (thetaMax - thetaMin) / 200;
+
+        this.ctx.fillStyle = fillColor;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX, centerY);
+
+        for (let theta = thetaMin; theta <= thetaMax; theta += step) {
+            const r = rFn(theta);
+            if (!isNaN(r) && isFinite(r)) {
+                const x = centerX + r * Math.cos(theta);
+                const y = centerY + r * Math.sin(theta);
+                this.ctx.lineTo(x, y);
+            }
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 绘制边界
+        if (strokeColor) {
+            this.ctx.strokeStyle = strokeColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            let first = true;
+            for (let theta = thetaMin; theta <= thetaMax; theta += step) {
+                const r = rFn(theta);
+                if (!isNaN(r) && isFinite(r)) {
+                    const x = centerX + r * Math.cos(theta);
+                    const y = centerY + r * Math.sin(theta);
+                    if (first) {
+                        this.ctx.moveTo(x, y);
+                        first = false;
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+            }
+            this.ctx.stroke();
+        }
+    }
+
+    /**
+     * 填充参数方程区域
+     * @param {Function} xFn - x = f(t)
+     * @param {Function} yFn - y = g(t)
+     * @param {number} tMin - 参数起始值
+     * @param {number} tMax - 参数结束值
+     * @param {Object} options - 填充选项
+     */
+    fillParametricRegion(xFn, yFn, tMin, tMax, options = {}) {
+        const {
+            fillColor = 'rgba(52, 152, 219, 0.3)',
+            strokeColor = 'rgba(52, 152, 219, 0.8)',
+            fillRule = 'evenodd'
+        } = options;
+
+        const step = (tMax - tMin) / 500;
+
+        this.ctx.fillStyle = fillColor;
+        this.ctx.beginPath();
+
+        let first = true;
+        for (let t = tMin; t <= tMax; t += step) {
+            const x = xFn(t);
+            const y = yFn(t);
+            if (!isNaN(x) && !isNaN(y) && isFinite(x) && isFinite(y)) {
+                if (first) {
+                    this.ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    this.ctx.lineTo(x, y);
+                }
+            }
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill(fillRule);
+
+        if (strokeColor) {
+            this.ctx.strokeStyle = strokeColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+        }
+    }
+
+    /**
+     * 创建渐变填充
+     * @param {Function} fn - 函数
+     * @param {Object} bounds - 边界
+     * @param {Object} options - 渐变选项
+     */
+    fillWithGradient(fn, bounds, options = {}) {
+        const {
+            gradientColors = ['rgba(66, 153, 225, 0.1)', 'rgba(66, 153, 225, 0.6)'],
+            gradientDirection = 'vertical' // 'vertical' 或 'horizontal'
+        } = options;
+
+        const { xMin, xMax, yMin, yMax } = bounds;
+
+        let gradient;
+        if (gradientDirection === 'vertical') {
+            gradient = this.ctx.createLinearGradient(0, yMin, 0, yMax);
+        } else {
+            gradient = this.ctx.createLinearGradient(xMin, 0, xMax, 0);
+        }
+
+        gradientColors.forEach((color, index) => {
+            gradient.addColorStop(index / (gradientColors.length - 1), color);
+        });
+
+        const step = (xMax - xMin) / 500;
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.moveTo(xMin, yMin);
+
+        for (let x = xMin; x <= xMax; x += step) {
+            const y = fn(x);
+            if (!isNaN(y) && isFinite(y)) {
+                this.ctx.lineTo(x, y);
+            }
+        }
+
+        this.ctx.lineTo(xMax, yMin);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
+    /**
+     * 填充带纹理的区域
+     * @param {Function} fn - 函数
+     * @param {Object} bounds - 边界
+     * @param {Object} options - 纹理选项
+     */
+    fillWithPattern(fn, bounds, options = {}) {
+        const {
+            patternType = 'stripes', // 'stripes', 'dots', 'grid'
+            patternColor = 'rgba(66, 153, 225, 0.5)',
+            patternSize = 10
+        } = options;
+
+        // 创建离屏canvas用于图案
+        const patternCanvas = document.createElement('canvas');
+        patternCanvas.width = patternSize * 2;
+        patternCanvas.height = patternSize * 2;
+        const pctx = patternCanvas.getContext('2d');
+
+        pctx.strokeStyle = patternColor;
+        pctx.lineWidth = 1;
+
+        if (patternType === 'stripes') {
+            pctx.beginPath();
+            pctx.moveTo(0, patternSize);
+            pctx.lineTo(patternSize, 0);
+            pctx.moveTo(0, patternSize * 2);
+            pctx.lineTo(patternSize * 2, 0);
+            pctx.moveTo(patternSize, patternSize * 2);
+            pctx.lineTo(patternSize * 2, patternSize);
+            pctx.stroke();
+        } else if (patternType === 'dots') {
+            pctx.fillStyle = patternColor;
+            pctx.beginPath();
+            pctx.arc(patternSize / 2, patternSize / 2, 2, 0, Math.PI * 2);
+            pctx.arc(patternSize * 1.5, patternSize * 1.5, 2, 0, Math.PI * 2);
+            pctx.fill();
+        } else if (patternType === 'grid') {
+            pctx.beginPath();
+            pctx.moveTo(patternSize, 0);
+            pctx.lineTo(patternSize, patternSize * 2);
+            pctx.moveTo(0, patternSize);
+            pctx.lineTo(patternSize * 2, patternSize);
+            pctx.stroke();
+        }
+
+        const pattern = this.ctx.createPattern(patternCanvas, 'repeat');
+
+        const { xMin, xMax } = bounds;
+        const step = (xMax - xMin) / 500;
+
+        this.ctx.fillStyle = pattern;
+        this.ctx.beginPath();
+        this.ctx.moveTo(xMin, 0);
+
+        for (let x = xMin; x <= xMax; x += step) {
+            const y = fn(x);
+            if (!isNaN(y) && isFinite(y)) {
+                this.ctx.lineTo(x, y);
+            }
+        }
+
+        this.ctx.lineTo(xMax, 0);
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
+    /**
+     * 计算区域面积（数值积分）
+     * @param {Function} fn - 函数
+     * @param {number} a - 下限
+     * @param {number} b - 上限
+     * @param {number} n - 分割数
+     * @returns {number} 面积
+     */
+    calculateArea(fn, a, b, n = 1000) {
+        const h = (b - a) / n;
+        let area = 0;
+
+        for (let i = 0; i < n; i++) {
+            const x0 = a + i * h;
+            const x1 = x0 + h;
+            const y0 = fn(x0);
+            const y1 = fn(x1);
+
+            if (!isNaN(y0) && !isNaN(y1) && isFinite(y0) && isFinite(y1)) {
+                // 梯形法则
+                area += (y0 + y1) * h / 2;
+            }
+        }
+
+        return area;
+    }
+
+    /**
+     * 高亮显示交点区域
+     * @param {Array} intersections - 交点数组 [{x, y}]
+     * @param {Object} options - 高亮选项
+     */
+    highlightIntersections(intersections, options = {}) {
+        const {
+            highlightColor = 'rgba(255, 235, 59, 0.5)',
+            radius = 8,
+            showCoordinates = true
+        } = options;
+
+        this.ctx.fillStyle = highlightColor;
+
+        intersections.forEach(point => {
+            // 绘制高亮圆
+            this.ctx.beginPath();
+            this.ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // 绘制坐标
+            if (showCoordinates) {
+                this.ctx.fillStyle = '#333';
+                this.ctx.font = '12px sans-serif';
+                this.ctx.fillText(
+                    `(${point.x.toFixed(2)}, ${point.y.toFixed(2)})`,
+                    point.x + radius + 5,
+                    point.y - radius - 5
+                );
+                this.ctx.fillStyle = highlightColor;
+            }
+        });
+    }
+
+    /**
+     * 填充多边形区域
+     * @param {Array} vertices - 顶点数组 [{x, y}, ...]
+     * @param {Object} options - 填充选项
+     */
+    fillPolygon(vertices, options = {}) {
+        const {
+            fillColor = 'rgba(149, 165, 166, 0.3)',
+            strokeColor = 'rgba(149, 165, 166, 0.8)',
+            strokeWidth = 2
+        } = options;
+
+        if (vertices.length < 3) return;
+
+        this.ctx.fillStyle = fillColor;
+        this.ctx.beginPath();
+        this.ctx.moveTo(vertices[0].x, vertices[0].y);
+
+        for (let i = 1; i < vertices.length; i++) {
+            this.ctx.lineTo(vertices[i].x, vertices[i].y);
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        if (strokeColor) {
+            this.ctx.strokeStyle = strokeColor;
+            this.ctx.lineWidth = strokeWidth;
+            this.ctx.stroke();
+        }
+    }
+
+    /**
+     * 创建填充区域对象（用于保存和恢复）
+     * @param {string} type - 填充类型
+     * @param {Object} params - 填充参数
+     * @returns {Object} 填充区域对象
+     */
+    createFillRegion(type, params) {
+        return {
+            id: 'fill_' + Date.now(),
+            type: type,
+            params: params,
+            visible: true,
+            createdAt: new Date().toISOString()
+        };
     }
 }
 
