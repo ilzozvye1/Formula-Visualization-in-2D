@@ -2,7 +2,7 @@
 const APP_VERSION = '1.1.0';
 const APP_NAME = '公式可视化';
 // 构建日期动态生成（格式：YYYY-MM-DD）
-const APP_BUILD_DATE = '2026-03-04';
+const APP_BUILD_DATE = '2026-03-05';
 
 // 全局变量
 let canvas, ctx;
