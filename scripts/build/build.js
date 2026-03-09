@@ -32,7 +32,8 @@ const CONFIG = {
         },
         web: {
             name: 'Web',
-            sourceFiles: ['index.html', 'script.js', 'styles.css'],
+            sourceFiles: ['index.html', 'styles.css', 'main.js'],
+            sourceModules: ['globals.js', 'initialization.js', 'drawing.js', 'equations.js', 'history.js', 'ui.js', 'events.js', 'storage.js', 'utils.js'],
             archiveDir: 'web'
         }
     }
@@ -54,9 +55,9 @@ function getBuildDate() {
 }
 
 function updateBuildDateInScript() {
-    const scriptPath = path.join(SRC_DIR, 'script.js');
+    const scriptPath = path.join(SRC_DIR, 'globals.js');
     if (!fs.existsSync(scriptPath)) {
-        console.log('⚠️  未找到 script.js，跳过构建日期更新');
+        console.log('⚠️  未找到 globals.js，跳过构建日期更新');
         return false;
     }
     
@@ -72,7 +73,7 @@ function updateBuildDateInScript() {
         console.log(`📝 已更新构建日期: ${buildDate}`);
         return true;
     } else {
-        console.log('⚠️  未找到 APP_BUILD_DATE 定义，请检查 script.js 格式');
+        console.log('⚠️  未找到 APP_BUILD_DATE 定义，请检查 globals.js 格式');
         return false;
     }
 }
@@ -87,7 +88,39 @@ function ensureDir(dir) {
 function cleanDir(dir) {
     if (fs.existsSync(dir)) {
         fs.rmSync(dir, { recursive: true, force: true });
-        console.log(`🗑️  清理目录: ${dir}`);
+        console.log(`🗑️  清理目录：${dir}`);
+    }
+}
+
+/**
+ * 清理 Electron 进程
+ */
+function killElectronProcesses() {
+    try {
+        console.log('🔍 检查是否有运行的 Electron 进程...');
+        // Windows 系统使用 taskkill 命令
+        if (process.platform === 'win32') {
+            execSync('taskkill /F /IM electron.exe 2>nul', { stdio: 'ignore' });
+            console.log('✅ 已关闭 Electron 进程');
+        } else {
+            execSync('pkill -f electron 2>/dev/null', { stdio: 'ignore' });
+            console.log('✅ 已关闭 Electron 进程');
+        }
+    } catch (error) {
+        // 没有 Electron 进程在运行，这是正常的
+        console.log('ℹ️  没有检测到运行的 Electron 进程');
+    }
+    
+    // 等待一下确保文件被释放
+    try {
+        console.log('⏳ 等待文件释放...');
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+    } catch (e) {
+        // 简单的等待方法
+        const start = Date.now();
+        while (Date.now() - start < 1000) {
+            // 等待 1 秒
+        }
     }
 }
 
@@ -184,6 +217,8 @@ function buildWeb(versionDir) {
         ensureDir(platformDir);
         
         let copiedCount = 0;
+        
+        // 复制主文件
         for (const file of platformConfig.sourceFiles) {
             const srcPath = path.join(SRC_DIR, file);
             if (fs.existsSync(srcPath)) {
@@ -192,6 +227,16 @@ function buildWeb(versionDir) {
             }
         }
         
+        // 复制模块文件
+        for (const file of platformConfig.sourceModules) {
+            const srcPath = path.join(SRC_DIR, file);
+            if (fs.existsSync(srcPath)) {
+                copyFile(srcPath, path.join(platformDir, file));
+                copiedCount++;
+            }
+        }
+        
+        // 复制assets目录
         const assetsSrcDir = path.join(SRC_DIR, 'assets');
         if (fs.existsSync(assetsSrcDir)) {
             ensureDir(path.join(platformDir, 'assets'));
@@ -253,6 +298,11 @@ function main() {
     const buildAndroidFlag = args.includes('--android') || buildAll;
     const buildWebFlag = args.includes('--web') || buildAll;
     const skipUpdateDate = args.includes('--skip-update-date');
+    
+    // 在构建前清理 Electron 进程
+    if (buildWin) {
+        killElectronProcesses();
+    }
     
     if (!skipUpdateDate) {
         updateBuildDateInScript();

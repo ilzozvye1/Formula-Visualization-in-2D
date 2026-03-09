@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>预设系统测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4CAF50;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #2196F3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>预设系统测试</h1>
+    <div id="test-results"></div>
+
+    <script type="module">
+        const resultsDiv = document.getElementById('test-results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+        }
+
+        try {
+            // 测试1: 导入模块
+            addResult('测试1: 导入模块...', 'info');
+            const { presetRegistry, PresetCategory, PresetItem } = await import('./modules/presetDecorators.js');
+            const { FormulaPreset } = await import('./modules/FormulaPreset.js');
+            const { presetManager } = await import('./modules/PresetManager.js');
+            const { parseFormula } = await import('./modules/equationParser.js');
+            addResult('✓ 所有模块导入成功', 'success');
+
+            // 测试2: 加载预设
+            addResult('测试2: 加载预设模块...', 'info');
+            await import('./presets/trigonometricPresets.js');
+            await import('./presets/polynomialPresets.js');
+            await import('./presets/exponentialPresets.js');
+            await import('./presets/specialPresets.js');
+            addResult(`✓ 预设加载完成: ${presetRegistry.presets.size} 个预设, ${presetRegistry.categories.size} 个分类`, 'success');
+
+            // 测试3: 验证公式生成和解析
+            addResult('测试3: 验证公式生成和解析...', 'info');
+            
+            const testResults = [];
+            const presets = Array.from(presetRegistry.presets.values());
+            
+            for (const preset of presets) {
+                const instance = new preset.targetClass(preset.params);
+                const formula = instance.generateFormula();
+                const parsed = parseFormula(formula);
+                
+                testResults.push({
+                    id: preset.id,
+                    name: preset.name,
+                    formula: formula,
+                    type: parsed ? parsed.type : '解析失败',
+                    success: parsed !== null
+                });
+            }
+            
+            let tableHtml = '<table><tr><th>ID</th><th>名称</th><th>生成公式</th><th>解析类型</th><th>状态</th></tr>';
+            testResults.forEach(r => {
+                tableHtml += `<tr>
+                    <td>${r.id}</td>
+                    <td>${r.name}</td>
+                    <td><code>${r.formula}</code></td>
+                    <td>${r.type}</td>
+                    <td style="color: ${r.success ? 'green' : 'red'}">${r.success ? '✓' : '✗'}</td>
+                </tr>`;
+            });
+            tableHtml += '</table>';
+            
+            const successCount = testResults.filter(r => r.success).length;
+            addResult(`公式解析测试: ${successCount}/${testResults.length} 成功` + tableHtml, successCount === testResults.length ? 'success' : 'error');
+
+            // 测试4: 创建方程对象
+            addResult('测试4: 创建方程对象...', 'info');
+            const sinePreset = presetManager.createPreset('sine-wave-basic');
+            const equation = sinePreset.toEquation();
+            addResult(`✓ 方程对象创建成功: <pre>${JSON.stringify(equation, null, 2)}</pre>`, 'success');
+
+            // 测试5: 计算函数值
+            addResult('测试5: 计算函数值...', 'info');
+            const y1 = sinePreset.calculate(Math.PI / 2);
+            const y2 = sinePreset.calculate(0);
+            addResult(`✓ sin(π/2) = ${y1}, sin(0) = ${y2}`, 'success');
+
+            if (successCount === testResults.length) {
+                addResult('<h2>所有测试通过!</h2>', 'success');
+            } else {
+                addResult(`<h2>部分测试失败</h2><p>有 ${testResults.length - successCount} 个预设的公式无法被解析器识别。</p>`, 'error');
+            }
+
+        } catch (error) {
+            addResult(`<strong>错误:</strong> ${error.message}<br><pre>${error.stack}</pre>`, 'error');
+        }
+    </script>
+</body>
+</html>

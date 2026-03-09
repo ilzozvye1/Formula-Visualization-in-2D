@@ -38,6 +38,11 @@ export class Renderer3D {
                 this.draw3DEquation(equation, index);
             }
         });
+
+        // 绘制交点
+        if (this.state.showIntersections) {
+            this.drawIntersections3D();
+        }
     }
 
     /**
@@ -60,6 +65,122 @@ export class Renderer3D {
         this.draw3DLine(0, 0, 0, -axisLength, 0, 0, COLORS.axisX);
         this.draw3DLine(0, 0, 0, 0, -axisLength, 0, COLORS.axisY);
         this.draw3DLine(0, 0, 0, 0, 0, -axisLength, COLORS.axisZ);
+
+        // 绘制坐标轴标签
+        this.drawAxisLabels(axisLength);
+    }
+
+    /**
+     * 绘制坐标轴标签
+     * @param {number} axisLength - 坐标轴长度
+     */
+    drawAxisLabels(axisLength) {
+        const { offsetX, offsetY, rotationX, rotationY, scale, fogEnabled, canvas } = this.state;
+        const labelOffset = 0.3 * (axisLength / 10); // 减小标签偏移量，避免超出画布
+
+        // 设置文本样式
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        // X轴标签 (正方向)
+        const xLabelPos = project3DTo2D(axisLength + labelOffset, 0, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+        if (this.isPointInCanvas(xLabelPos, canvas)) {
+            this.ctx.fillStyle = COLORS.axisX;
+            this.ctx.fillText('X', xLabelPos.x, xLabelPos.y);
+        }
+
+        // X轴标签 (负方向)
+        const xNegLabelPos = project3DTo2D(-axisLength - labelOffset, 0, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+        if (this.isPointInCanvas(xNegLabelPos, canvas)) {
+            this.ctx.fillText('-X', xNegLabelPos.x, xNegLabelPos.y);
+        }
+
+        // Y轴标签 (正方向)
+        const yLabelPos = project3DTo2D(0, axisLength + labelOffset, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+        if (this.isPointInCanvas(yLabelPos, canvas)) {
+            this.ctx.fillStyle = COLORS.axisY;
+            this.ctx.fillText('Y', yLabelPos.x, yLabelPos.y);
+        }
+
+        // Y轴标签 (负方向)
+        const yNegLabelPos = project3DTo2D(0, -axisLength - labelOffset, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+        if (this.isPointInCanvas(yNegLabelPos, canvas)) {
+            this.ctx.fillText('-Y', yNegLabelPos.x, yNegLabelPos.y);
+        }
+
+        // Z轴标签 (正方向)
+        const zLabelPos = project3DTo2D(0, 0, axisLength + labelOffset, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+        if (this.isPointInCanvas(zLabelPos, canvas)) {
+            this.ctx.fillStyle = COLORS.axisZ;
+            this.ctx.fillText('Z', zLabelPos.x, zLabelPos.y);
+        }
+
+        // Z轴标签 (负方向)
+        const zNegLabelPos = project3DTo2D(0, 0, -axisLength - labelOffset, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+        if (this.isPointInCanvas(zNegLabelPos, canvas)) {
+            this.ctx.fillText('-Z', zNegLabelPos.x, zNegLabelPos.y);
+        }
+
+        // 绘制刻度标签
+        this.drawScaleLabels(axisLength);
+    }
+    
+    /**
+     * 检查点是否在画布内
+     * @param {Object} point - 点坐标 {x, y}
+     * @param {HTMLCanvasElement} canvas - 画布
+     * @returns {boolean} 是否在画布内
+     */
+    isPointInCanvas(point, canvas) {
+        const margin = 20; // 边距
+        return point.x >= -margin && 
+               point.x <= canvas.width + margin && 
+               point.y >= -margin && 
+               point.y <= canvas.height + margin;
+    }
+
+    /**
+     * 绘制刻度标签
+     * @param {number} axisLength - 坐标轴长度
+     */
+    drawScaleLabels(axisLength) {
+        const { offsetX, offsetY, rotationX, rotationY, scale, fogEnabled, canvas } = this.state;
+        const maxVal = Math.floor(axisLength / scale);
+
+        this.ctx.font = '11px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+
+        // X轴刻度
+        this.ctx.fillStyle = COLORS.axisX;
+        for (let i = -maxVal; i <= maxVal; i++) {
+            if (i === 0) continue;
+            const pos = project3DTo2D(i * scale, -0.3 * scale, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+            if (this.isPointInCanvas(pos, canvas)) {
+                this.ctx.fillText(i.toString(), pos.x, pos.y);
+            }
+        }
+
+        // Y轴刻度
+        this.ctx.fillStyle = COLORS.axisY;
+        for (let i = -maxVal; i <= maxVal; i++) {
+            if (i === 0) continue;
+            const pos = project3DTo2D(0.3 * scale, i * scale, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+            if (this.isPointInCanvas(pos, canvas)) {
+                this.ctx.fillText(i.toString(), pos.x, pos.y);
+            }
+        }
+
+        // Z轴刻度
+        this.ctx.fillStyle = COLORS.axisZ;
+        for (let i = -maxVal; i <= maxVal; i++) {
+            if (i === 0) continue;
+            const pos = project3DTo2D(0, -0.3 * scale, i * scale, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+            if (this.isPointInCanvas(pos, canvas)) {
+                this.ctx.fillText(i.toString(), pos.x, pos.y);
+            }
+        }
     }
 
     /**
@@ -112,10 +233,431 @@ export class Renderer3D {
             this.draw3DCurve(parsed);
         } else if (parsed.type === '3dsurface') {
             this.draw3DSurface(parsed);
+        } else {
+            // 在3D模式下绘制2D方程（将Z设为0）
+            this.draw2DEquationIn3D(parsed);
         }
 
         this.ctx.shadowBlur = 0;
         this.ctx.setLineDash([]);
+    }
+
+    /**
+     * 在 3D 模式下绘制 2D 方程
+     * @param {Object} parsed - 解析后的方程
+     */
+    draw2DEquationIn3D(parsed) {
+        const { scale, offsetX, offsetY, rotationX, rotationY, fogEnabled } = this.state;
+        const { horizontalShift = 0, verticalShift = 0 } = parsed;
+
+        this.ctx.beginPath();
+        let isFirstPoint = true;
+
+        // 采样范围
+        const range = 10;
+        const step = 0.1;
+
+        for (let x = -range; x <= range; x += step) {
+            // 应用水平位移
+            const shiftedX = x - horizontalShift;
+            let y;
+
+            // 根据方程类型计算 Y 值
+            try {
+                switch (parsed.type) {
+                    case 'linear':
+                        y = parsed.slope * shiftedX + parsed.intercept;
+                        break;
+                    case 'quadratic':
+                        y = parsed.a * shiftedX * shiftedX + parsed.b * shiftedX + parsed.c;
+                        break;
+                    case 'power':
+                        y = parsed.coefficient * Math.pow(shiftedX, parsed.exponent);
+                        break;
+                    case 'exponential':
+                        y = parsed.coefficient * Math.pow(parsed.base === 'e' ? Math.E : parsed.base, shiftedX);
+                        break;
+                    case 'logarithmic':
+                        if (shiftedX <= 0) continue;
+                        y = parsed.coefficient * (parsed.base === 'e' ? Math.log(shiftedX) : Math.log(shiftedX) / Math.log(parsed.base));
+                        break;
+                    case 'trigonometric':
+                        y = parsed.amplitude * Math[parsed.func](parsed.frequency * shiftedX + parsed.phase);
+                        break;
+                    case 'inverseTrigonometric':
+                        const invShiftedX = shiftedX;
+                        if ((parsed.func === 'arcsin' || parsed.func === 'arccos') && (invShiftedX < -1 || invShiftedX > 1)) {
+                            isFirstPoint = true;
+                            continue;
+                        }
+                        const amplitude = parsed.amplitude || 1;
+                        switch (parsed.func) {
+                            case 'arcsin': y = amplitude * Math.asin(invShiftedX); break;
+                            case 'arccos': y = amplitude * Math.acos(invShiftedX); break;
+                            case 'arctan': y = amplitude * Math.atan(invShiftedX); break;
+                            default: y = 0;
+                        }
+                        break;
+                    case 'hyperbolic':
+                        const hypTransformedX = (parsed.frequency || 1) * shiftedX;
+                        const hypAmplitude = parsed.amplitude || 1;
+                        switch (parsed.func) {
+                            case 'sinh': y = hypAmplitude * Math.sinh(hypTransformedX); break;
+                            case 'cosh': y = hypAmplitude * Math.cosh(hypTransformedX); break;
+                            case 'tanh': y = hypAmplitude * Math.tanh(hypTransformedX); break;
+                            default: y = 0;
+                        }
+                        break;
+                    case 'rounding':
+                        const roundAmplitude = parsed.coefficient || 1;
+                        switch (parsed.func) {
+                            case 'floor': y = roundAmplitude * Math.floor(shiftedX); break;
+                            case 'ceil': y = roundAmplitude * Math.ceil(shiftedX); break;
+                            case 'round': y = roundAmplitude * Math.round(shiftedX); break;
+                            default: y = 0;
+                        }
+                        break;
+                    case 'absolute':
+                        y = (parsed.coefficient || 1) * Math.abs((parsed.frequency || 1) * shiftedX + (parsed.phase || 0));
+                        break;
+                    case 'special':
+                        if (parsed.func && typeof parsed.func === 'function') {
+                            y = parsed.func(shiftedX, parsed.coefficient || 1);
+                        } else {
+                            y = 0;
+                        }
+                        break;
+                    default:
+                        y = 0;
+                }
+            } catch (error) {
+                isFirstPoint = true;
+                continue;
+            }
+
+            // 应用垂直位移
+            y += verticalShift;
+
+            if (!isFinite(y)) {
+                isFirstPoint = true;
+                continue;
+            }
+
+            // 将 3D 坐标投影到 2D 画布（Z=0）
+            const projected = project3DTo2D(x * scale, y * scale, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+
+            if (isFirstPoint) {
+                this.ctx.moveTo(projected.x, projected.y);
+                isFirstPoint = false;
+            } else {
+                this.ctx.lineTo(projected.x, projected.y);
+            }
+        }
+
+        this.ctx.stroke();
+    }
+
+    /**
+     * 在3D模式下绘制交点
+     */
+    drawIntersections3D() {
+        const { equations, showIntersections, intersectionColor } = this.state;
+
+        if (!showIntersections) {
+            return;
+        }
+
+        const visibleEquations = equations.filter(eq => eq.visible);
+        if (visibleEquations.length === 0) {
+            return;
+        }
+
+        // 计算所有交点（包括与坐标轴的交点）
+        const intersections = this.calculateIntersections3D(visibleEquations);
+
+        // 绘制交点
+        const { scale, offsetX, offsetY, rotationX, rotationY, fogEnabled } = this.state;
+
+        this.ctx.fillStyle = intersectionColor || '#ff0000';
+        intersections.forEach(point => {
+            // 将3D坐标投影到2D画布
+            const projected = project3DTo2D(point.x * scale, point.y * scale, 0, rotationX, rotationY, offsetX, offsetY, scale, fogEnabled);
+
+            // 检查点是否在画布内
+            if (!this.isPointInCanvas(projected, this.state.canvas)) {
+                return;
+            }
+
+            // 绘制交点圆圈
+            this.ctx.beginPath();
+            this.ctx.arc(projected.x, projected.y, 5, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // 绘制交点坐标标签
+            this.ctx.fillStyle = this.state.darkMode ? '#ffffff' : '#000000';
+            this.ctx.font = '10px Arial';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(
+                `(${point.x.toFixed(2)}, ${point.y.toFixed(2)})`,
+                projected.x + 8,
+                projected.y - 8
+            );
+            this.ctx.fillStyle = intersectionColor || '#ff0000';
+        });
+    }
+
+    /**
+     * 计算3D模式下的交点
+     * @param {Array} equations - 可见方程数组
+     * @returns {Array} 交点数组
+     */
+    calculateIntersections3D(equations) {
+        const intersections = [];
+        const range = 10; // 计算范围
+        const step = 0.1; // 采样步长
+
+        // 遍历所有方程对，计算方程之间的交点
+        for (let i = 0; i < equations.length; i++) {
+            for (let j = i + 1; j < equations.length; j++) {
+                const eq1 = equations[i];
+                const eq2 = equations[j];
+
+                // 在范围内采样寻找交点
+                for (let x = -range; x <= range; x += step) {
+                    const y1 = this.getEquationY3D(x, eq1.parsed);
+                    const y2 = this.getEquationY3D(x, eq2.parsed);
+
+                    if (!isFinite(y1) || !isFinite(y2)) continue;
+
+                    // 检查是否相交（Y值接近）
+                    if (Math.abs(y1 - y2) < 0.1) {
+                        // 找到交点，使用更精确的方法优化
+                        const refinedPoint = this.refineIntersection3D(x, eq1.parsed, eq2.parsed);
+                        if (refinedPoint && !this.isDuplicatePoint3D(refinedPoint, intersections)) {
+                            intersections.push(refinedPoint);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 计算方程与坐标轴的交点
+        equations.forEach(equation => {
+            const axisIntersections = this.calculateAxisIntersections3D(equation.parsed);
+            axisIntersections.forEach(point => {
+                if (!this.isDuplicatePoint3D(point, intersections)) {
+                    intersections.push(point);
+                }
+            });
+        });
+
+        return intersections;
+    }
+
+    /**
+     * 获取方程在指定 X 处的 Y 值（3D 模式）
+     * @param {number} x - X 坐标
+     * @param {Object} parsed - 解析后的方程
+     * @returns {number} Y 坐标
+     */
+    getEquationY3D(x, parsed) {
+        const { horizontalShift = 0, verticalShift = 0 } = parsed;
+        const shiftedX = x - horizontalShift;
+
+        try {
+            switch (parsed.type) {
+                case 'linear':
+                    return parsed.slope * shiftedX + parsed.intercept + verticalShift;
+                case 'quadratic':
+                    return parsed.a * shiftedX * shiftedX + parsed.b * shiftedX + parsed.c + verticalShift;
+                case 'power':
+                    return parsed.coefficient * Math.pow(shiftedX, parsed.exponent) + verticalShift;
+                case 'exponential':
+                    return parsed.coefficient * Math.pow(parsed.base === 'e' ? Math.E : parsed.base, shiftedX) + verticalShift;
+                case 'logarithmic':
+                    if (shiftedX <= 0) return NaN;
+                    return parsed.coefficient * (parsed.base === 'e' ? Math.log(shiftedX) : Math.log(shiftedX) / Math.log(parsed.base)) + verticalShift;
+                case 'trigonometric':
+                    return parsed.amplitude * Math[parsed.func](parsed.frequency * shiftedX + parsed.phase) + verticalShift;
+                case 'inverseTrigonometric':
+                    const invShiftedX = shiftedX;
+                    if ((parsed.func === 'arcsin' || parsed.func === 'arccos') && (invShiftedX < -1 || invShiftedX > 1)) {
+                        return NaN;
+                    }
+                    const amplitude = parsed.amplitude || 1;
+                    switch (parsed.func) {
+                        case 'arcsin': return amplitude * Math.asin(invShiftedX) + verticalShift;
+                        case 'arccos': return amplitude * Math.acos(invShiftedX) + verticalShift;
+                        case 'arctan': return amplitude * Math.atan(invShiftedX) + verticalShift;
+                        default: return verticalShift;
+                    }
+                case 'hyperbolic':
+                    const hypTransformedX = (parsed.frequency || 1) * shiftedX;
+                    const hypAmplitude = parsed.amplitude || 1;
+                    switch (parsed.func) {
+                        case 'sinh': return hypAmplitude * Math.sinh(hypTransformedX) + verticalShift;
+                        case 'cosh': return hypAmplitude * Math.cosh(hypTransformedX) + verticalShift;
+                        case 'tanh': return hypAmplitude * Math.tanh(hypTransformedX) + verticalShift;
+                        default: return verticalShift;
+                    }
+                case 'rounding':
+                    const roundAmplitude = parsed.coefficient || 1;
+                    switch (parsed.func) {
+                        case 'floor': return roundAmplitude * Math.floor(shiftedX) + verticalShift;
+                        case 'ceil': return roundAmplitude * Math.ceil(shiftedX) + verticalShift;
+                        case 'round': return roundAmplitude * Math.round(shiftedX) + verticalShift;
+                        default: return verticalShift;
+                    }
+                case 'absolute':
+                    return (parsed.coefficient || 1) * Math.abs((parsed.frequency || 1) * shiftedX + (parsed.phase || 0)) + verticalShift;
+                case 'special':
+                    if (parsed.func && typeof parsed.func === 'function') {
+                        return parsed.func(shiftedX, parsed.coefficient || 1) + verticalShift;
+                    }
+                    return verticalShift;
+                default:
+                    return verticalShift;
+            }
+        } catch (error) {
+            return NaN;
+        }
+    }
+
+    /**
+     * 优化3D交点位置
+     * @param {number} x - 初始X坐标
+     * @param {Object} parsed1 - 第一个方程
+     * @param {Object} parsed2 - 第二个方程
+     * @returns {Object|null} 优化后的交点
+     */
+    refineIntersection3D(x, parsed1, parsed2) {
+        let left = x - 0.1;
+        let right = x + 0.1;
+        let bestX = x;
+        let minDiff = Infinity;
+
+        for (let iter = 0; iter < 10; iter++) {
+            const mid = (left + right) / 2;
+            const y1Left = this.getEquationY3D(left, parsed1);
+            const y2Left = this.getEquationY3D(left, parsed2);
+            const y1Mid = this.getEquationY3D(mid, parsed1);
+            const y2Mid = this.getEquationY3D(mid, parsed2);
+
+            if (!isFinite(y1Left) || !isFinite(y2Left) || !isFinite(y1Mid) || !isFinite(y2Mid)) {
+                return null;
+            }
+
+            const diffLeft = Math.abs(y1Left - y2Left);
+            const diffMid = Math.abs(y1Mid - y2Mid);
+
+            if (diffMid < minDiff) {
+                minDiff = diffMid;
+                bestX = mid;
+            }
+
+            if ((y1Left - y2Left) * (y1Mid - y2Mid) < 0) {
+                right = mid;
+            } else {
+                left = mid;
+            }
+        }
+
+        const y = this.getEquationY3D(bestX, parsed1);
+        if (!isFinite(y) || minDiff > 0.01) {
+            return null;
+        }
+
+        return { x: bestX, y };
+    }
+
+    /**
+     * 计算3D模式下方程与坐标轴的交点
+     * @param {Object} parsed - 解析后的方程
+     * @returns {Array} 交点数组
+     */
+    calculateAxisIntersections3D(parsed) {
+        const intersections = [];
+
+        // 计算与Y轴的交点（X=0）
+        const yIntercept = this.getEquationY3D(0, parsed);
+        if (isFinite(yIntercept)) {
+            intersections.push({ x: 0, y: yIntercept, type: 'y-axis' });
+        }
+
+        // 计算与X轴的交点（Y=0）
+        const range = 10;
+        const step = 0.05;
+
+        for (let x = -range; x <= range; x += step) {
+            const y = this.getEquationY3D(x, parsed);
+            const yNext = this.getEquationY3D(x + step, parsed);
+
+            if (!isFinite(y) || !isFinite(yNext)) continue;
+
+            // 检查是否跨越X轴（Y值变号）
+            if (y * yNext < 0 || Math.abs(y) < 0.01) {
+                // 使用二分法精确计算
+                const xIntercept = this.refineXAxisIntersection3D(x, x + step, parsed);
+                if (xIntercept !== null) {
+                    intersections.push({ x: xIntercept, y: 0, type: 'x-axis' });
+                }
+            }
+        }
+
+        return intersections;
+    }
+
+    /**
+     * 精确计算3D模式下与X轴的交点
+     * @param {number} left - 左边界
+     * @param {number} right - 右边界
+     * @param {Object} parsed - 解析后的方程
+     * @returns {number|null} X坐标
+     */
+    refineXAxisIntersection3D(left, right, parsed) {
+        let bestX = null;
+        let minAbsY = Infinity;
+
+        for (let iter = 0; iter < 20; iter++) {
+            const mid = (left + right) / 2;
+            const yLeft = this.getEquationY3D(left, parsed);
+            const yMid = this.getEquationY3D(mid, parsed);
+            const yRight = this.getEquationY3D(right, parsed);
+
+            if (!isFinite(yLeft) || !isFinite(yMid) || !isFinite(yRight)) {
+                return null;
+            }
+
+            // 记录最接近0的Y值
+            if (Math.abs(yMid) < minAbsY) {
+                minAbsY = Math.abs(yMid);
+                bestX = mid;
+            }
+
+            // 二分法缩小范围
+            if (yLeft * yMid < 0) {
+                right = mid;
+            } else if (yMid * yRight < 0) {
+                left = mid;
+            } else {
+                break;
+            }
+        }
+
+        // 只有当Y值足够接近0时才返回
+        return minAbsY < 0.001 ? bestX : null;
+    }
+
+    /**
+     * 检查3D点是否是重复点
+     * @param {Object} point - 待检查的点
+     * @param {Array} existingPoints - 已存在的点数组
+     * @returns {boolean} 是否重复
+     */
+    isDuplicatePoint3D(point, existingPoints) {
+        return existingPoints.some(p =>
+            Math.abs(p.x - point.x) < 0.1 && Math.abs(p.y - point.y) < 0.1
+        );
     }
 
     /**

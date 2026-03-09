@@ -1,8 +1,8 @@
 {
   "name": "formula-visualization-2d",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "公式可视化工具 - 支持2D和3D多种方程类型的可视化",
-  "main": "src/main.js",
+  "main": "src/electron-main.js",
   "scripts": {
     "start": "electron .",
     "build": "node scripts/build/build.js",
@@ -35,10 +35,10 @@
     "files": [
       "src/main.js",
       "src/index.html",
-      "src/script.js",
       "src/styles.css",
       "src/preload.js",
-      "src/assets/**/*"
+      "src/assets/**/*",
+      "src/*.js"
     ],
     "win": {
       "target": [

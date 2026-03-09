@@ -37,7 +37,8 @@ class AppState {
         // 视图状态
         this.showGrid = true;
         this.darkMode = false;
-        this.showIntersections = false;
+        this.showIntersections = true;
+        this.intersectionColor = '#ff0000';
         
         // 3D特效
         this.fogEnabled = false;
@@ -214,7 +215,16 @@ class AppState {
         this.showIntersections = show;
         this.notify('showIntersections', show);
     }
-    
+
+    /**
+     * 设置交点颜色
+     * @param {string} color - 颜色值
+     */
+    setIntersectionColor(color) {
+        this.intersectionColor = color;
+        this.notify('intersectionColor', color);
+    }
+
     /**
      * 切换雾化
      * @param {boolean} enabled - 是否启用雾化
@@ -360,6 +370,7 @@ class AppState {
             showGrid: this.showGrid,
             darkMode: this.darkMode,
             showIntersections: this.showIntersections,
+            intersectionColor: this.intersectionColor,
             fogEnabled: this.fogEnabled
         };
     }
@@ -380,6 +391,7 @@ class AppState {
         if (state.showGrid !== undefined) this.showGrid = state.showGrid;
         if (state.darkMode !== undefined) this.darkMode = state.darkMode;
         if (state.showIntersections !== undefined) this.showIntersections = state.showIntersections;
+        if (state.intersectionColor !== undefined) this.intersectionColor = state.intersectionColor;
         if (state.fogEnabled !== undefined) this.fogEnabled = state.fogEnabled;
         
         this.notify('stateImported', state);

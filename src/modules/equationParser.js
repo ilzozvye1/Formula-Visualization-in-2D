@@ -268,7 +268,7 @@ function parseTrigonometricEquation(expression) {
             const frequency = match[2] ? (match[2] === '' ? 1 : parseFloat(match[2])) : 1;
             const phase = match[3] ? parseFloat(match[3]) : 0;
             
-            return {
+            const result = {
                 type: 'trigonometric',
                 func,
                 amplitude,
@@ -276,11 +276,19 @@ function parseTrigonometricEquation(expression) {
                 phase,
                 formula: `y = ${amplitude}${func}(${frequency}x${phase >= 0 ? '+' : ''}${phase})`
             };
+            
+            // 为有渐近线的函数添加渐近线信息
+            if (func === 'tan' || func === 'cot' || func === 'sec' || func === 'csc') {
+                result.hasAsymptotes = true;
+                result.asymptoteType = func;
+            }
+            
+            return result;
         }
         
         // 简单形式 sin(x)
         if (expression === `${func}(x)`) {
-            return {
+            const result = {
                 type: 'trigonometric',
                 func,
                 amplitude: 1,
@@ -288,6 +296,14 @@ function parseTrigonometricEquation(expression) {
                 phase: 0,
                 formula: `y = ${func}(x)`
             };
+            
+            // 为有渐近线的函数添加渐近线信息
+            if (func === 'tan' || func === 'cot' || func === 'sec' || func === 'csc') {
+                result.hasAsymptotes = true;
+                result.asymptoteType = func;
+            }
+            
+            return result;
         }
     }
     
@@ -323,17 +339,38 @@ function parseInverseTrigonometricEquation(expression) {
  */
 function parseHyperbolicEquation(expression) {
     const hyperbolicFunctions = ['sinh', 'cosh', 'tanh'];
-    
+
     for (const func of hyperbolicFunctions) {
-        if (expression === `${func}(x)`) {
+        // 匹配 sinh(x), sinh(x)+c, c*sinh(x) 等形式
+        const regex = new RegExp(`^(-?\\d*\\.?\\d*)\\*?${func}\\(x\\)?([+-]?\\d+\\.?\\d*)?$`);
+        const match = expression.match(regex);
+
+        if (match || expression === `${func}(x)`) {
+            let amplitude = 1;
+            let verticalShift = 0;
+
+            if (match) {
+                const ampStr = match[1];
+                if (ampStr && ampStr !== '') {
+                    amplitude = ampStr === '-' ? -1 : parseFloat(ampStr);
+                }
+                if (match[2]) {
+                    verticalShift = parseFloat(match[2]);
+                }
+            }
+
             return {
                 type: 'hyperbolic',
                 func,
-                formula: `y = ${func}(x)`
+                amplitude,
+                frequency: 1,
+                phase: 0,
+                verticalShift,
+                formula: `y = ${amplitude !== 1 ? amplitude : ''}${func}(x)${verticalShift !== 0 ? (verticalShift >= 0 ? '+' : '') + verticalShift : ''}`
             };
         }
     }
-    
+
     return null;
 }
 
@@ -347,6 +384,11 @@ function parseAbsoluteEquation(expression) {
     if (expression === '|x|' || expression === 'abs(x)') {
         return {
             type: 'absolute',
+            coefficient: 1,
+            frequency: 1,
+            phase: 0,
+            horizontalShift: 0,
+            verticalShift: 0,
             formula: 'y = |x|'
         };
     }
@@ -357,6 +399,11 @@ function parseAbsoluteEquation(expression) {
         const shift = parseFloat(match[1]);
         return {
             type: 'absolute',
+            coefficient: 1,
+            frequency: 1,
+            phase: -shift,
+            horizontalShift: shift,
+            verticalShift: 0,
             shift,
             formula: `y = |x${shift >= 0 ? '+' : ''}${shift}|`
         };
@@ -378,17 +425,39 @@ function parseRoundingEquation(expression) {
         'int': 'floor',
         '[x]': 'floor'
     };
-    
+
     for (const [pattern, func] of Object.entries(roundingFunctions)) {
-        if (expression === `${pattern}(x)` || expression === pattern) {
+        // 匹配 floor(x), floor(x)+c, floor(x)-c, c*floor(x) 等形式
+        const regex = new RegExp(`^(-?\\d*\\.?\\d*)\\*?${pattern}\\(x\\)?([+-]?\\d+\\.?\\d*)?$`);
+        const match = expression.match(regex);
+
+        if (match || expression === `${pattern}(x)` || expression === pattern) {
+            let coefficient = 1;
+            let verticalShift = 0;
+
+            if (match) {
+                const coeffStr = match[1];
+                if (coeffStr && coeffStr !== '') {
+                    coefficient = coeffStr === '-' ? -1 : parseFloat(coeffStr);
+                }
+                if (match[2]) {
+                    verticalShift = parseFloat(match[2]);
+                }
+            }
+
             return {
                 type: 'rounding',
                 func,
-                formula: `y = ${func}(x)`
+                coefficient,
+                frequency: 1,
+                phase: 0,
+                horizontalShift: 0,
+                verticalShift,
+                formula: `y = ${coefficient !== 1 ? coefficient : ''}${func}(x)${verticalShift !== 0 ? (verticalShift >= 0 ? '+' : '') + verticalShift : ''}`
             };
         }
     }
-    
+
     return null;
 }
 
@@ -403,28 +472,146 @@ function parseSpecialEquation(expression) {
         return {
             type: 'special',
             name: 'sinc',
+            func: (x, coeff) => coeff * (x === 0 ? 1 : Math.sin(x) / x),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
             formula: 'y = sin(x)/x'
         };
     }
-    
+
     // 高斯函数 e^(-x^2)
     if (expression === 'e^(-x^2)' || expression === 'exp(-x^2)') {
         return {
             type: 'special',
             name: 'gaussian',
+            func: (x, coeff) => coeff * Math.exp(-x * x),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
             formula: 'y = e^(-x²)'
         };
     }
-    
+
+    // 高斯函数 2e^(-x^2)
+    const gaussian2Match = expression.match(/^(\d+(?:\.\d+)?)e\^\(-x\^2\)$/);
+    if (gaussian2Match) {
+        const coefficient = parseFloat(gaussian2Match[1]);
+        return {
+            type: 'special',
+            name: 'gaussian2',
+            func: (x, coeff) => coeff * Math.exp(-x * x),
+            coefficient: coefficient,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: `y = ${coefficient}e^(-x²)`
+        };
+    }
+
+    // 拉普拉斯函数 e^(-|x|)
+    if (expression === 'e^(-|x|)' || expression === 'exp(-|x|)') {
+        return {
+            type: 'special',
+            name: 'laplace',
+            func: (x, coeff) => coeff * Math.exp(-Math.abs(x)),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = e^(-|x|)'
+        };
+    }
+
     // sigmoid函数
     if (expression === '1/(1+e^(-x))' || expression === 'sigmoid(x)') {
         return {
             type: 'special',
             name: 'sigmoid',
+            func: (x, coeff) => coeff / (1 + Math.exp(-x)),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
             formula: 'y = 1/(1+e^(-x))'
         };
     }
-    
+
+    // x*sin(x) - 振荡放大
+    if (expression === 'x*sin(x)' || expression === 'x*sin(x)') {
+        return {
+            type: 'special',
+            name: 'xsin',
+            func: (x, coeff) => coeff * x * Math.sin(x),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = x·sin(x)'
+        };
+    }
+
+    // |sin(x)| - 全波整流
+    if (expression === '|sin(x)|' || expression === 'abs(sin(x))') {
+        return {
+            type: 'special',
+            name: 'abs_sin',
+            func: (x, coeff) => coeff * Math.abs(Math.sin(x)),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = |sin(x)|'
+        };
+    }
+
+    // |cos(x)|
+    if (expression === '|cos(x)|' || expression === 'abs(cos(x))') {
+        return {
+            type: 'special',
+            name: 'abs_cos',
+            func: (x, coeff) => coeff * Math.abs(Math.cos(x)),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = |cos(x)|'
+        };
+    }
+
+    // x^2*sin(1/x) - 振荡函数
+    if (expression === 'x^2*sin(1/x)' || expression === 'x*x*sin(1/x)') {
+        return {
+            type: 'special',
+            name: 'x2sin1x',
+            func: (x, coeff) => coeff * (x === 0 ? 0 : x * x * Math.sin(1 / x)),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = x²·sin(1/x)'
+        };
+    }
+
+    // x*exp(-x) - Gamma核函数
+    if (expression === 'x*exp(-x)' || expression === 'x*e^(-x)') {
+        return {
+            type: 'special',
+            name: 'gamma_kernel',
+            func: (x, coeff) => coeff * (x >= 0 ? x * Math.exp(-x) : 0),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = x·e^(-x)'
+        };
+    }
+
+    // sin(x)/sqrt(x) - 衰减振荡
+    if (expression === 'sin(x)/x^0.5' || expression === 'sin(x)/sqrt(x)') {
+        return {
+            type: 'special',
+            name: 'damped_oscillation',
+            func: (x, coeff) => coeff * (x > 0 ? Math.sin(x) / Math.sqrt(x) : 0),
+            coefficient: 1,
+            horizontalShift: 0,
+            verticalShift: 0,
+            formula: 'y = sin(x)/√x'
+        };
+    }
+
     return null;
 }
 
@@ -437,6 +624,8 @@ function parseGenericEquation(expression) {
     return {
         type: 'generic',
         expression,
+        horizontalShift: 0,
+        verticalShift: 0,
         formula: `y = ${expression}`
     };
 }
@@ -619,20 +808,167 @@ function getDefaultSurfaceParams(surfaceType) {
  */
 export function formatEquation(parsed) {
     if (!parsed) return '无效方程';
-    
-    if (parsed.formula) {
-        return parsed.formula;
+
+    const { coefficient = 1, verticalShift = 0, horizontalShift = 0, phase = 0, amplitude = 1 } = parsed;
+    const actualPhase = phase !== 0 ? phase : horizontalShift;
+
+    // 辅助函数：格式化数值（限制精度，去除末尾0）
+    const formatNum = (num) => {
+        if (num === undefined || num === null) return '0';
+        if (num === 0) return '0';
+        // 使用toFixed(4)限制精度，然后去除末尾的0
+        let str = parseFloat(num.toFixed(4)).toString();
+        return str;
+    };
+
+    // 辅助函数：格式化系数（系数为1时省略）
+    const formatCoeff = (coeff) => coeff !== 1 ? formatNum(coeff) : '';
+
+    // 辅助函数：格式化相位/水平位移
+    const formatPhase = (ph) => {
+        if (ph === 0) return 'x';
+        return `(x${ph >= 0 ? '+' : ''}${formatNum(ph)})`;
+    };
+
+    // 辅助函数：格式化垂直位移
+    const formatVertShift = (vs) => vs !== 0 ? ` ${vs >= 0 ? '+' : ''}${formatNum(vs)}` : '';
+
+    switch (parsed.type) {
+        case 'linear': {
+            const { slope, intercept } = parsed;
+            const slopeStr = slope !== 1 ? formatNum(slope) : '';
+            const slopeSign = slope < 0 ? '-' : '';
+            if (slope === 0) {
+                return `y = ${formatNum(intercept)}`;
+            }
+            return `y = ${slopeSign}${slopeStr}x${formatVertShift(intercept)}`;
+        }
+
+        case 'quadratic': {
+            const { a, b, c } = parsed;
+            let formula = 'y = ';
+            if (a !== 1) formula += formatNum(a);
+            formula += 'x²';
+            if (b !== 0) formula += ` ${b >= 0 ? '+' : ''}${b !== 1 ? formatNum(b) : ''}x`;
+            if (c !== 0) formula += ` ${c >= 0 ? '+' : ''}${formatNum(c)}`;
+            return formula;
+        }
+
+        case 'power': {
+            const { exponent } = parsed;
+            const coeff = coefficient !== undefined ? coefficient : 1;
+            const coeffStr = coeff !== 1 ? formatNum(coeff) : '';
+            const h = horizontalShift !== undefined ? horizontalShift : 0;
+            const phaseStr = h !== 0 ? `(x${h >= 0 ? '-' : '+'}${formatNum(Math.abs(h))})` : 'x';
+            if (exponent === -1) {
+                return `y = ${coeffStr}/${phaseStr}${formatVertShift(verticalShift)}`;
+            }
+            if (exponent === 0.5) {
+                return `y = ${coeffStr}√${phaseStr}${formatVertShift(verticalShift)}`;
+            }
+            if (exponent === 1/3) {
+                return `y = ${coeffStr}∛${phaseStr}${formatVertShift(verticalShift)}`;
+            }
+            return `y = ${coeffStr}${phaseStr}^${formatNum(exponent)}${formatVertShift(verticalShift)}`;
+        }
+
+        case 'exponential': {
+            const { base } = parsed;
+            const coeff = coefficient !== undefined ? coefficient : 1;
+            const coeffStr = coeff !== 1 ? formatNum(coeff) : '';
+            const baseStr = base === 'e' ? 'e' : formatNum(base);
+            const h = horizontalShift !== undefined ? horizontalShift : 0;
+            const phaseStr = h !== 0 ? `^(x${h >= 0 ? '-' : '+'}${formatNum(Math.abs(h))})` : '^x';
+            return `y = ${coeffStr}${baseStr}${phaseStr}${formatVertShift(verticalShift)}`;
+        }
+
+        case 'logarithmic': {
+            const { base } = parsed;
+            const coeff = coefficient !== undefined ? coefficient : 1;
+            const coeffStr = coeff !== 1 ? formatNum(coeff) : '';
+            const baseStr = base === 'e' ? '' : formatNum(base);
+            const h = horizontalShift !== undefined ? horizontalShift : 0;
+            const phaseStr = h !== 0 ? `(x${h >= 0 ? '-' : '+'}${formatNum(Math.abs(h))})` : '(x)';
+            return `y = ${coeffStr}log${baseStr}${phaseStr}${formatVertShift(verticalShift)}`;
+        }
+
+        case 'trigonometric': {
+            const { amplitude, frequency, func } = parsed;
+            const ampStr = amplitude !== 1 ? formatNum(amplitude) : '';
+            const freqStr = frequency !== 1 ? formatNum(frequency) : '';
+            const phaseStr = actualPhase !== 0 ? `${actualPhase >= 0 ? '+' : ''}${formatNum(actualPhase)}` : '';
+            return `y = ${ampStr}${func}(${freqStr}x${phaseStr})${formatVertShift(verticalShift)}`;
+        }
+
+        case 'inverseTrigonometric': {
+            const amp = amplitude !== undefined ? amplitude : 1;
+            const freq = parsed.frequency !== undefined ? parsed.frequency : 1;
+            const ampStr = amp !== 1 ? formatNum(amp) : '';
+            const freqStr = freq !== 1 ? formatNum(freq) : '';
+            const phaseStr = actualPhase !== 0 ? `${actualPhase >= 0 ? '+' : ''}${formatNum(actualPhase)}` : '';
+            return `y = ${ampStr}${parsed.func}(${freqStr}x${phaseStr})${formatVertShift(verticalShift)}`;
+        }
+
+        case 'hyperbolic': {
+            const { amplitude, func } = parsed;
+            const amp = amplitude !== undefined ? amplitude : 1;
+            const ampStr = amp !== 1 ? formatNum(amp) : '';
+            const h = horizontalShift !== undefined ? horizontalShift : 0;
+            const phaseStr = h !== 0 ? `(x${h >= 0 ? '-' : '+'}${formatNum(Math.abs(h))})` : '(x)';
+            return `y = ${ampStr}${func}${phaseStr}${formatVertShift(verticalShift)}`;
+        }
+
+        case 'absolute': {
+            const coeff = coefficient !== undefined ? coefficient : 1;
+            const coeffStr = coeff !== 1 ? formatNum(coeff) : '';
+            const h = horizontalShift !== undefined ? horizontalShift : 0;
+            const phaseStr = h !== 0 ? `(x${h >= 0 ? '-' : '+'}${formatNum(Math.abs(h))})` : 'x';
+            return `y = ${coeffStr}|${phaseStr}|${formatVertShift(verticalShift)}`;
+        }
+
+        case 'rounding': {
+            const { func: roundFunc } = parsed;
+            const coeff = coefficient !== undefined ? coefficient : 1;
+            const coeffStr = coeff !== 1 ? formatNum(coeff) : '';
+            const h = horizontalShift !== undefined ? horizontalShift : 0;
+            const phaseStr = h !== 0 ? `(x${h >= 0 ? '-' : '+'}${formatNum(Math.abs(h))})` : '(x)';
+            return `y = ${coeffStr}${roundFunc}${phaseStr}${formatVertShift(verticalShift)}`;
+        }
+
+        case 'special': {
+            const { name } = parsed;
+            const coeff = coefficient !== undefined ? coefficient : 1;
+            const coeffStr = coeff !== 1 ? formatNum(coeff) : '';
+            const funcNames = {
+                'sinc': 'sin(x)/x',
+                'gaussian': 'e^(-x²)',
+                'gaussian2': 'e^(-x²)',
+                'laplace': 'e^(-|x|)',
+                'sigmoid': '1/(1+e^(-x))',
+                'xsin': 'x·sin(x)',
+                'abs_sin': '|sin(x)|',
+                'abs_cos': '|cos(x)|',
+                'x2sin1x': 'x²·sin(1/x)',
+                'gamma_kernel': 'x·e^(-x)',
+                'damped_oscillation': 'sin(x)/√x'
+            };
+            const funcName = funcNames[name] || name;
+            const phaseStr = horizontalShift !== 0 ? ` ${formatPhase(horizontalShift)}` : '';
+            return `y = ${coeffStr}${funcName}${phaseStr}${formatVertShift(verticalShift)}`;
+        }
+
+        case '3dcurve':
+            return `3D曲线: ${parsed.name || parsed.curveType}`;
+
+        case '3dsurface':
+            return `3D曲面: ${parsed.name || parsed.surfaceType}`;
+
+        default:
+            if (parsed.formula) {
+                return parsed.formula;
+            }
+            return '未知方程类型';
     }
-    
-    if (parsed.type === '3dcurve') {
-        return `3D曲线: ${parsed.name || parsed.curveType}`;
-    }
-    
-    if (parsed.type === '3dsurface') {
-        return `3D曲面: ${parsed.name || parsed.surfaceType}`;
-    }
-    
-    return '未知方程类型';
 }
 
 /**

@@ -75,6 +75,34 @@ body.dark-mode h1 .version {
     gap: 10px;
     margin-bottom: 10px;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.formula-prefix {
+    background-color: #f0f0f0;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    color: #333;
+    white-space: nowrap;
+}
+
+body.dark-mode .formula-prefix {
+    background-color: #3d3d3d;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+.input-row .formula-prefix + input[type="text"] {
+    border-radius: 0;
+    flex: 1;
+}
+
+.input-row .formula-prefix + input[type="text"]:first-child {
+    border-radius: 0 4px 4px 0;
 }
 
 .input-row select,
@@ -186,32 +214,6 @@ body.dark-mode .equation-item.selected {
     width: 100%;
 }
 
-.equation-item .remove-btn {
-    width: 18px;
-    height: 18px;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background-color: #f44336;
-    color: white;
-    border-radius: 50%;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.equation-item:hover .remove-btn,
-.equation-item.selected .remove-btn {
-    display: flex;
-}
-
-.equation-item .remove-btn:hover {
-    background-color: #d32f2f;
-}
-
 /* 可见性切换按钮 */
 .equation-item .visibility-btn {
     width: 20px;
@@ -242,6 +244,106 @@ body.dark-mode .equation-item .visibility-btn:hover {
 /* 隐藏的方程项样式 */
 .equation-item.hidden-equation {
     opacity: 0.6;
+}
+
+/* 方程头部 */
+.equation-item .equation-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    position: relative;
+    overflow: hidden; /* 防止水平滑动 */
+}
+
+/* 方程文本 */
+.equation-item .equation-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 删除按钮 */
+.equation-item .remove-btn {
+    width: 20px;
+    height: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.equation-item:hover .remove-btn,
+.equation-item.selected .remove-btn {
+    display: flex;
+}
+
+.equation-item .remove-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* 方程参数区域 */
+.equation-item .equation-params {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+body.dark-mode .equation-item .equation-params {
+    background-color: #3d3d3d;
+}
+
+/* 参数行 */
+.equation-item .param-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.equation-item .param-row label {
+    min-width: 80px;
+    font-size: 12px;
+    color: #666;
+}
+
+body.dark-mode .equation-item .param-row label {
+    color: #aaa;
+}
+
+.equation-item .param-row input {
+    width: 80px;
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: left;
+}
+
+body.dark-mode .equation-item .param-row input {
+    background-color: #4d4d4d;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+.equation-item .param-row input:focus {
+    outline: none;
+    border-color: #4CAF50;
 }
 
 .equation-item.hidden-equation .equation-editor {
@@ -577,27 +679,82 @@ body.dark-mode .setting-item input[type="number"] {
 }
 
 .export-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+body.dark-mode .export-section {
+    background-color: #3d3d3d;
+    border-color: #555;
+}
+
+.export-section h3 {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+body.dark-mode .export-section h3 {
+    color: #e0e0e0;
+}
+
+.export-buttons {
     display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
 .export-btn,
-.reset-btn {
-    flex: 1;
-    padding: 10px;
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
     font-size: 14px;
+    font-weight: 500;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.export-btn {
+.export-btn:hover,
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.export-btn:active,
+.action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-icon {
+    font-size: 16px;
+}
+
+.png-btn {
     background-color: #2196F3;
     color: white;
 }
 
-.export-btn:hover {
+.png-btn:hover {
     background-color: #0b7dda;
+}
+
+.pdf-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.pdf-btn:hover {
+    background-color: #3d8b40;
 }
 
 .reset-btn {
@@ -616,6 +773,15 @@ body.dark-mode .setting-item input[type="number"] {
 
 .help-btn:hover {
     background-color: #7b1fa2;
+}
+
+.clear-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.clear-btn:hover {
+    background-color: #d32f2f;
 }
 
 .help-panel {
@@ -698,7 +864,7 @@ canvas:active {
 .coordinate-display {
     position: absolute;
     top: 10px;
-    right: 20px;
+    right: 50px;
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
     padding: 4px 8px;
@@ -707,23 +873,32 @@ canvas:active {
     font-size: 11px;
     pointer-events: none;
     display: none;
+    z-index: 100;
 }
 
 /* 图例显示 */
 .legend-display {
     position: absolute;
-    top: 10px;
-    left: 20px;
+    top: 45px;
+    left: 50px;
     background: rgba(255, 255, 255, 0.95);
-    padding: 6px;
+    padding: 8px 12px;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: 11px;
     border: 1px solid #ddd;
-    max-width: 120px;
-    max-height: 120px;
+    max-width: none;
+    width: auto;
+    min-width: 120px;
+    max-height: 200px;
     overflow-y: auto;
     display: none;
     z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 当view-controls-canvas不存在时，legend-display自动升高 */
+.legend-display.no-toolbar {
+    top: 10px;
 }
 
 body.dark-mode .legend-display {
@@ -747,9 +922,10 @@ body.dark-mode .legend-display {
 
 .legend-text {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    word-wrap: break-word;
+    line-height: 1.4;
 }
 
 .controls {
@@ -840,7 +1016,7 @@ body.dark-mode .mode-btn.active {
 .view-controls-canvas {
     position: absolute;
     top: 10px;
-    left: 20px;
+    left: 50px;
     display: flex;
     gap: 3px;
     z-index: 101;
@@ -1122,12 +1298,15 @@ body.dark-mode .preset-submenu {
 }
 
 .preset-item {
-    padding: 8px 12px 8px 24px;
+    padding: 8px 12px 8px 12px;
     cursor: pointer;
     font-size: 13px;
     color: #555;
     transition: all 0.2s;
     border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .preset-item:hover {
@@ -1144,6 +1323,54 @@ body.dark-mode .preset-item:hover {
     background-color: #1b5e20;
     color: #81c784;
     border-left-color: #4CAF50;
+}
+
+/* 预设项颜色指示器 */
+.preset-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+body.dark-mode .preset-color {
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* 预设项名称 */
+.preset-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 预设项难度标签 */
+.preset-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.preset-badge-intermediate {
+    background-color: #ff9800;
+    color: white;
+}
+
+.preset-badge-advanced {
+    background-color: #f44336;
+    color: white;
+}
+
+body.dark-mode .preset-badge-intermediate {
+    background-color: #e65100;
+}
+
+body.dark-mode .preset-badge-advanced {
+    background-color: #c62828;
 }
 
 @media (max-width: 900px) {
