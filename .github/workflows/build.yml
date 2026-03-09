@@ -58,3 +58,33 @@ jobs:
       with:
         name: windows-build
         path: dist/
+
+    - name: Get version from package.json
+      id: version
+      run: |
+        $version = (Get-Content package.json | ConvertFrom-Json).version
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        name: Release v${{ steps.version.outputs.version }}
+        body: |
+          ## 自动构建版本
+          
+          ### 更新内容
+          - 版本：${{ steps.version.outputs.version }}
+          - 构建时间：${{ github.event.head_commit.timestamp }}
+          - Commit：${{ github.sha }}
+          
+          ### 安装文件
+          - Windows 安装版：`公式可视化 Setup ${version}.exe`
+          - Windows 便携版：`公式可视化 ${version}.exe`
+        files: |
+          dist/*.exe
+          dist/*.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
