@@ -33,7 +33,7 @@ jobs:
   build-electron-app:
     needs: build
     runs-on: windows-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push'
 
     steps:
     - name: Checkout code
@@ -53,19 +53,33 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-build
-        path: dist/
-
     - name: Get version from package.json
       id: version
       run: |
         $version = (Get-Content package.json | ConvertFrom-Json).version
+        $commitSha = "${{ github.sha }}".Substring(0, 7)
+        $branchName = "${{ github.ref_name }}" -replace '[^a-zA-Z0-9_-]', '-'
         echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "short_sha=$commitSha" >> $env:GITHUB_OUTPUT
+        echo "branch=$branchName" >> $env:GITHUB_OUTPUT
+
+    - name: Upload artifacts (Develop/PR)
+      if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build-dev-${{ steps.version.outputs.short_sha }}
+        path: dist/
+        retention-days: 7
+
+    - name: Upload artifacts (Release)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build-release-${{ steps.version.outputs.version }}
+        path: dist/
 
     - name: Create Release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.version.outputs.version }}
