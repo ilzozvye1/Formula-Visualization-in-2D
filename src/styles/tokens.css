@@ -1,0 +1,202 @@
+/* tokens.css - Design Tokens */
+/* 基于 IMPLEMENTATION_DESKTOP.md 文档设计 */
+
+:root {
+  /* ==================== 颜色系统 ==================== */
+  /* 主色 */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  
+  /* 功能色 - 成功 */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  
+  /* 功能色 - 警告 */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  
+  /* 功能色 - 错误 */
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  
+  /* 功能色 - 信息 */
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #bae6fd;
+  --color-info-300: #7dd3fc;
+  --color-info-400: #38bdf8;
+  --color-info-500: #0ea5e9;
+  
+  /* 表面色 - 浅色模式 */
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8fafc;
+  --surface-tertiary: #f1f5f9;
+  --surface-hover: #e2e8f0;
+  --surface-active: #cbd5e1;
+  --surface-border: #e2e8f0;
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* 文字色 - 浅色模式 */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-disabled: #cbd5e1;
+  --text-inverse: #ffffff;
+  
+  /* 暗黑模式表面色 */
+  --surface-primary-dark: #1e293b;
+  --surface-secondary-dark: #0f172a;
+  --surface-tertiary-dark: #334155;
+  --surface-hover-dark: #475569;
+  --surface-active-dark: #64748b;
+  --surface-border-dark: #334155;
+  
+  /* 暗黑模式文字色 */
+  --text-primary-dark: #f1f5f9;
+  --text-secondary-dark: #cbd5e1;
+  --text-muted-dark: #64748b;
+  
+  /* ==================== 字体系统 ==================== */
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-family-mono: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  
+  /* 字号阶梯 */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  
+  /* 字重 */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* 行高 */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  
+  /* ==================== 间距系统 ==================== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  
+  /* ==================== 圆角系统 ==================== */
+  --radius-sm: 3px;
+  --radius: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+  
+  /* ==================== 阴影系统 ==================== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  
+  /* ==================== 动画系统 ==================== */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* ==================== 桌面端尺寸 ==================== */
+  --menu-bar-height: 32px;
+  --toolbar-height: 44px;
+  --dock-width: 52px;
+  --properties-width: 260px;
+  --status-bar-height: 28px;
+  
+  /* 桌面端间距 */
+  --space-desktop: 12px;
+  --space-desktop-lg: 16px;
+  
+  /* 桌面端圆角 */
+  --radius-desktop: 6px;
+  
+  /* ==================== 边框系统 ==================== */
+  --border-width: 1px;
+  --border-width-2: 2px;
+  
+  /* ==================== Z-Index ==================== */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+}
+
+/* 暗黑模式 */
+[data-theme="dark"] {
+  --surface-primary: var(--surface-primary-dark);
+  --surface-secondary: var(--surface-secondary-dark);
+  --surface-tertiary: var(--surface-tertiary-dark);
+  --surface-hover: var(--surface-hover-dark);
+  --surface-active: var(--surface-active-dark);
+  --surface-border: var(--surface-border-dark);
+  
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --text-muted: var(--text-muted-dark);
+}
+
+/* 响应式断点 */
+@media (max-width: 768px) {
+  :root {
+    --properties-width: 200px;
+    --dock-width: 44px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --properties-width: 100%;
+    --dock-width: 100%;
+    --menu-bar-height: 28px;
+    --toolbar-height: 40px;
+    --status-bar-height: 24px;
+  }
+}

@@ -1465,4 +1465,379 @@ export function showNotification(title, body) {
 
 ---
 
+## 9. 商业化功能
+
+### 9.1 功能限制
+
+| 功能 | 免费版 | Pro版 |
+|------|--------|-------|
+| 方程数量 | ≤3个 | 无限 |
+| 2D函数类型 | 15种 | 全部25种 |
+| 3D曲线 | 3种 | 12种 |
+| 3D曲面 | 3种 | 9种 |
+| 预设公式 | 30个 | 200+个 |
+| PNG导出 | ✅ | ✅ |
+| PDF导出 | ❌ | ✅ |
+| SVG导出 | ❌ | ✅ |
+| 开机启动 | ❌ | ✅ |
+| 系统托盘 | ❌ | ✅ |
+| 无干扰模式 | ❌ | ✅ |
+| 文件关联 | ❌ | ✅ |
+
+### 9.2 定价
+
+| 版本 | 价格 | 备注 |
+|------|------|------|
+| 桌面免费版 | ¥0 | 基础功能 |
+| 桌面专业版 | ¥38 | 终身买断（首发¥28） |
+| 桌面教育版 | ¥399/学期 | 10人团队 |
+
+### 9.3 桌面端 Pro 菜单
+
+```javascript
+// 在菜单中添加 Pro 相关选项
+const menuTemplate = [
+  {
+    label: '帮助',
+    submenu: [
+      { label: '使用教程', accelerator: 'F1', click: () => mainWindow.webContents.send('menu-action', 'help') },
+      { type: 'separator' },
+      { label: '升级 Pro', click: () => mainWindow.webContents.send('menu-action', 'showPro') },
+      { label: '激活许可证', click: () => mainWindow.webContents.send('menu-action', 'activateLicense') },
+      { type: 'separator' },
+      { label: '关于', click: () => mainWindow.webContents.send('menu-action', 'about') }
+    ]
+  }
+];
+```
+
+### 9.4 桌面端 Pro 标识
+
+```html
+<!-- Header 中的 Pro 标识 -->
+<header class="desktop-header">
+  <div class="header-left">
+    <div class="app-title">FormulaViz</div>
+  </div>
+  <div class="header-right">
+    <div class="pro-badge-container" id="pro-badge"></div>
+  </div>
+</header>
+```
+
+### 9.5 桌面端支付流程
+
+```javascript
+// js/components/PaymentWindow.js
+export class PaymentWindow {
+  constructor(mainWindow) {
+    this.mainWindow = mainWindow;
+    this.window = null;
+    this.plans = {
+      lifetime: { id: 'desktop-lifetime', name: '桌面专业版', price: 38, period: null },
+      education: { id: 'desktop-education', name: '桌面教育版', price: 399, period: null }
+    };
+  }
+
+  open() {
+    if (this.window) {
+      this.window.focus();
+      return;
+    }
+
+    this.window = new BrowserWindow({
+      width: 500,
+      height: 600,
+      parent: this.mainWindow,
+      modal: true,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      title: '升级 Pro 版',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    this.window.loadURL('payment.html');
+    this.window.setMenu(null);
+
+    this.window.on('closed', () => {
+      this.window = null;
+    });
+  }
+
+  close() {
+    if (this.window) {
+      this.window.close();
+    }
+  }
+}
+```
+
+### 9.6 桌面端许可证激活
+
+```javascript
+// js/components/LicenseDialog.js
+export class LicenseDialog {
+  constructor(mainWindow) {
+    this.mainWindow = mainWindow;
+  }
+
+  show() {
+    const result = dialog.showMessageBoxSync(this.mainWindow, {
+      type: 'question',
+      title: '激活许可证',
+      message: '请输入您的许可证密钥',
+      buttons: ['激活', '取消'],
+      defaultId: 0
+    });
+
+    if (result === 0) {
+      this.promptLicenseKey();
+    }
+  }
+
+  async promptLicenseKey() {
+    const { response, checkboxChecked } = await dialog.showMessageBox(this.mainWindow, {
+      type: 'question',
+      title: '输入密钥',
+      message: '请输入许可证密钥:',
+      buttons: ['确定', '取消'],
+      defaultId: 0,
+      cancelId: 1
+    });
+  }
+}
+```
+
+### 9.7 桌面端 Pro 功能实现
+
+```javascript
+// 开机启动
+function setAutoStart(enabled) {
+  if (process.platform === 'win32') {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      path: app.getPath('exe')
+    });
+  } else if (process.platform === 'darwin') {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      path: app.getPath('exe')
+    });
+  }
+}
+
+// 系统托盘（Pro 功能）
+function createProTray() {
+  const trayMenu = Menu.buildFromTemplate([
+    { 
+      label: '显示 FormulaViz Pro', 
+      click: () => mainWindow.show() 
+    },
+    { type: 'separator' },
+    { 
+      label: '开机启动', 
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (menuItem) => setAutoStart(menuItem.checked)
+    },
+    { type: 'separator' },
+    { 
+      label: '关于', 
+      click: () => showAbout() 
+    }
+  ]);
+
+  tray.setContextMenu(trayMenu);
+}
+
+// 文件关联（Pro 功能）
+function setupFileAssociation() {
+  if (process.platform === 'win32') {
+    app.setAsDefaultProtocolClient('formulaviz');
+  }
+}
+```
+
+### 9.8 功能限制检查
+
+```javascript
+// js/core/FeatureGate.js
+export class FeatureGate {
+  constructor(featureManager) {
+    this.featureManager = featureManager;
+  }
+
+  checkEquationLimit() {
+    const limit = this.featureManager.getLimit('maxEquations');
+    const currentCount = this.getCurrentEquationCount();
+
+    if (currentCount >= limit) {
+      this.showProDialog('方程数量已达上限', `免费版最多 ${limit} 个方程`);
+      return false;
+    }
+    return true;
+  }
+
+  checkExportFormat(format) {
+    if (format === 'pdf' || format === 'svg') {
+      if (!this.featureManager.canUse(`allow${format.toUpperCase()}Export`)) {
+        this.showProDialog(
+          `${format.toUpperCase()} 导出是 Pro 专属功能`,
+          '升级 Pro 版解锁 PDF 和 SVG 导出'
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  checkDesktopFeature(feature) {
+    if (!this.featureManager.canUse(feature)) {
+      const featureNames = {
+        'autoStart': '开机启动',
+        'systemTray': '系统托盘',
+        'distractionFree': '无干扰模式',
+        'fileAssociation': '文件关联'
+      };
+      this.showProDialog(
+        `${featureNames[feature] || feature}是 Pro 专属功能`,
+        '升级 Pro 版解锁桌面端高级功能'
+      );
+      return false;
+    }
+    return true;
+  }
+
+  showProDialog(title, message) {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Pro 专属功能',
+      message: title,
+      detail: message,
+      buttons: ['升级 Pro', '取消'],
+      defaultId: 0
+    }).then(result => {
+      if (result.response === 0) {
+        window.dispatchEvent(new CustomEvent('show-payment'));
+      }
+    });
+  }
+
+  getCurrentEquationCount() {
+    return window.app ? window.app.state.equations.length : 0;
+  }
+}
+```
+
+### 9.9 桌面端样式扩展
+
+```css
+/* pro.css - 桌面端 Pro 样式 */
+
+/* Header Pro Badge */
+.pro-badge-container {
+  display: flex;
+  align-items: center;
+}
+
+.pro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.pro-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.pro-badge.activated {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  cursor: default;
+}
+
+.pro-badge.activated:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Pro 专属菜单项 */
+.menu-item-pro {
+  position: relative;
+}
+
+.menu-item-pro::after {
+  content: '⚡';
+  font-size: 10px;
+  margin-left: 8px;
+  opacity: 0.7;
+}
+
+/* Pro 功能禁用状态 */
+.pro-feature-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* 支付窗口样式 */
+.payment-window {
+  background: var(--surface-primary);
+}
+
+.payment-plan-card {
+  padding: 20px;
+  border: 2px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.payment-plan-card:hover {
+  border-color: var(--color-brand-300);
+}
+
+.payment-plan-card.selected {
+  border-color: var(--color-brand-500);
+  background: rgba(14, 165, 233, 0.05);
+}
+
+.payment-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.payment-plan-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.payment-plan-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-brand-500);
+}
+
+.payment-plan-description {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+```
+
+---
+
 > 文档版本: 1.0 | 最后更新: 2026-03-10

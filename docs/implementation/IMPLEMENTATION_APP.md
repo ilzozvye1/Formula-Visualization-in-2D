@@ -1338,4 +1338,524 @@ export function animateWithTransform(element, property, from, to, duration) {
 
 ---
 
+## 8. 商业化功能
+
+### 8.1 功能限制
+
+| 功能 | 免费版 | Pro版 |
+|------|--------|-------|
+| 方程数量 | ≤3个 | 无限 |
+| 预设公式 | 20个 | 100+个 |
+| 3D曲面 | 2种 | 9种 |
+| PDF导出 | ❌ | ✅ |
+| 多指操作 | ❌ | ✅ |
+| Apple Pencil | ❌ | ✅ |
+
+### 8.2 定价
+
+| 版本 | 价格 |
+|------|------|
+| 移动免费版 | ¥0 |
+| 移动专业版 | ¥18（终身买断）|
+
+### 8.3 移动端 Pro 标识
+
+```html
+<!-- Header 中的 Pro 标识 -->
+<header class="app-header" id="header">
+  <button class="menu-btn" id="menu-btn">☰</button>
+  <span class="app-title">FormulaViz</span>
+  <div class="header-actions">
+    <div class="pro-badge-mini" id="pro-badge"></div>
+    <button class="icon-btn" id="settings-btn">⚙️</button>
+    <button class="icon-btn" id="export-btn">📤</button>
+  </div>
+</header>
+```
+
+### 8.4 商业化组件
+
+```javascript
+// js/components/ProBadge.js
+export class ProBadge {
+  constructor(containerId, options = {}) {
+    this.container = document.getElementById(containerId);
+    this.options = {
+      size: options.size || 'default',
+      onUpgradeClick: options.onUpgradeClick || (() => {})
+    };
+    this.render();
+  }
+
+  render() {
+    this.container.innerHTML = `
+      <span class="pro-badge pro-badge-${this.options.size}">
+        <span class="pro-icon">⚡</span>
+        <span class="pro-text">Pro</span>
+      </span>
+    `;
+    
+    this.container.querySelector('.pro-badge').addEventListener('click', () => {
+      this.options.onUpgradeClick();
+    });
+  }
+
+  update(isPro) {
+    if (isPro) {
+      this.container.innerHTML = `
+        <span class="pro-badge pro-badge-${this.options.size} activated">
+          <span class="pro-icon">✓</span>
+          <span class="pro-text">已激活</span>
+        </span>
+      `;
+    } else {
+      this.render();
+    }
+  }
+}
+```
+
+### 8.5 移动端支付流程
+
+```javascript
+// js/components/PaymentSheet.js
+export class PaymentSheet {
+  constructor(modalId, options = {}) {
+    this.modal = document.getElementById(modalId);
+    this.options = {
+      platform: 'app',
+      onClose: options.onClose || (() => {}),
+      onActivate: options.onActivate || (() => {})
+    };
+    this.plans = {
+      lifetime: { id: 'app-lifetime', name: '移动专业版', price: 18, period: null }
+    };
+    this.render();
+  }
+
+  render() {
+    this.modal.innerHTML = `
+      <div class="sheet">
+        <div class="sheet-header">
+          <h3>升级 Pro 版</h3>
+          <button class="sheet-close" id="sheet-close">✕</button>
+        </div>
+        
+        <div class="sheet-content">
+          <div class="plan-card selected">
+            <div class="plan-info">
+              <span class="plan-name">${this.plans.lifetime.name}</span>
+              <span class="plan-description">终身有效，无需续费</span>
+            </div>
+            <div class="plan-price">
+              <span class="price-value">¥18</span>
+            </div>
+          </div>
+          
+          <div class="payment-methods">
+            <button class="payment-method-btn" data-method="wechat">
+              <span class="method-icon">💚</span> 微信支付
+            </button>
+            <button class="payment-method-btn" data-method="alipay">
+              <span class="method-icon">💙</span> 支付宝
+            </button>
+          </div>
+          
+          <button class="btn btn-pro btn-block" id="pay-btn">
+            立即支付 ¥18
+          </button>
+          
+          <div class="license-activation">
+            <p>已有许可证密钥？</p>
+            <button class="btn btn-ghost btn-sm" id="activate-link">
+              激活许可证
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    this.modal.querySelector('#sheet-close').addEventListener('click', () => this.close());
+    this.modal.querySelector('#activate-link').addEventListener('click', () => this.showLicenseInput());
+    this.modal.querySelector('#pay-btn').addEventListener('click', () => this.initiatePayment());
+  }
+
+  showLicenseInput() {
+    const content = this.modal.querySelector('.sheet-content');
+    content.innerHTML = `
+      <div class="license-input-section">
+        <p>请输入您的许可证密钥</p>
+        <input type="text" class="license-input" id="license-input" 
+               placeholder="PRO-XXXX-XXXXXX-XXXXXX">
+        <button class="btn btn-pro btn-block" id="activate-btn">
+          激活
+        </button>
+      </div>
+    `;
+    
+    this.modal.querySelector('#activate-btn').addEventListener('click', () => {
+      const key = this.modal.querySelector('#license-input').value.trim();
+      this.options.onActivate(key);
+    });
+  }
+
+  initiatePayment() {
+    // 调用原生支付接口或显示收款码
+    this.showQRCode();
+  }
+
+  showQRCode() {
+    const content = this.modal.querySelector('.sheet-content');
+    content.innerHTML = `
+      <div class="qrcode-section">
+        <p>请扫码支付 ¥18</p>
+        <div class="qrcode-placeholder">
+          <div class="qr-icon">📱</div>
+          <div class="qr-amount">¥18</div>
+        </div>
+        <p class="qr-instructions">支付成功后联系客服获取密钥</p>
+      </div>
+    `;
+  }
+
+  open() {
+    this.modal.classList.remove('hidden');
+    this.modal.classList.add('open');
+  }
+
+  close() {
+    this.modal.classList.remove('open');
+    setTimeout(() => this.modal.classList.add('hidden'), 300);
+    this.options.onClose();
+  }
+}
+```
+
+### 8.6 移动端样式扩展
+
+```css
+/* pro.css - 移动端 Pro 样式 */
+
+.pro-badge-mini {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pro-badge-mini .pro-badge {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.pro-badge-mini .pro-icon {
+  font-size: 10px;
+}
+
+/* Bottom Sheet 样式 */
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 85vh;
+  background: var(--surface-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  transform: translateY(100%);
+  transition: transform var(--duration-normal) var(--ease-default);
+  z-index: 200;
+  overflow-y: auto;
+}
+
+.sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-mobile);
+  border-bottom: 1px solid var(--surface-border);
+  position: sticky;
+  top: 0;
+  background: var(--surface-primary);
+}
+
+.sheet-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.sheet-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.sheet-close:active {
+  background: var(--surface-hover);
+}
+
+.sheet-content {
+  padding: var(--space-mobile);
+}
+
+/* Plan Card */
+.plan-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-mobile);
+  border: 2px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-mobile);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.plan-card.selected {
+  border-color: var(--color-brand-500);
+  background: rgba(14, 165, 233, 0.05);
+}
+
+.plan-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.plan-description {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.plan-price {
+  text-align: right;
+}
+
+.price-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-brand-500);
+}
+
+/* Payment Method Buttons */
+.payment-methods {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-mobile);
+}
+
+.payment-method-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 14px;
+  border: 2px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.payment-method-btn.selected {
+  border-color: var(--color-brand-500);
+  background: rgba(14, 165, 233, 0.05);
+}
+
+.payment-method-btn:active {
+  transform: scale(0.98);
+}
+
+/* License Input */
+.license-input-section {
+  text-align: center;
+}
+
+.license-input-section p {
+  margin-bottom: var(--space-mobile);
+  color: var(--text-muted);
+}
+
+.license-input {
+  width: 100%;
+  padding: 14px;
+  font-size: 14px;
+  text-align: center;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-mobile);
+}
+
+.license-input:focus {
+  outline: none;
+  border-color: var(--color-brand-500);
+}
+
+/* QR Code Section */
+.qrcode-section {
+  text-align: center;
+}
+
+.qrcode-section p {
+  margin-bottom: var(--space-mobile);
+  color: var(--text-muted);
+}
+
+.qrcode-placeholder {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto var(--space-mobile);
+  background: white;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-2);
+}
+
+.qr-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qr-instructions {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* License Activation Link */
+.license-activation {
+  margin-top: var(--space-mobile);
+  padding-top: var(--space-mobile);
+  border-top: 1px solid var(--surface-border);
+  text-align: center;
+}
+
+.license-activation p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+```
+
+### 8.7 功能限制提示
+
+```javascript
+// js/components/FeatureGate.js
+export class FeatureGate {
+  constructor(featureManager) {
+    this.featureManager = featureManager;
+  }
+
+  checkEquationLimit() {
+    const limit = this.featureManager.getLimit('maxEquations');
+    const currentCount = this.getCurrentEquationCount();
+    
+    if (currentCount >= limit) {
+      this.showLimitReached('方程数量', limit);
+      return false;
+    }
+    return true;
+  }
+
+  checkPDFExport() {
+    if (!this.featureManager.canUse('allowPDFExport')) {
+      this.showProFeaturePrompt('PDF 导出');
+      return false;
+    }
+    return true;
+  }
+
+  showLimitReached(feature, limit) {
+    this.showBottomSheet(`
+      <div class="feature-gate-content">
+        <div class="gate-icon">🔒</div>
+        <h3>${feature}已达上限</h3>
+        <p>免费版最多 ${limit} 个，升级 Pro 解锁无限</p>
+        <button class="btn btn-pro btn-lg btn-block" id="gate-upgrade-btn">
+          升级 Pro
+        </button>
+      </div>
+    `);
+    
+    document.getElementById('gate-upgrade-btn').addEventListener('click', () => {
+      window.app.showPaymentSheet();
+    });
+  }
+
+  showProFeaturePrompt(feature) {
+    this.showBottomSheet(`
+      <div class="feature-gate-content">
+        <div class="gate-icon">⚡</div>
+        <h3>${feature}是 Pro 专属功能</h3>
+        <p>升级 Pro 版解锁全部 Pro 功能</p>
+        <button class="btn btn-pro btn-lg btn-block" id="gate-upgrade-btn">
+          升级 Pro
+        </button>
+      </div>
+    `);
+    
+    document.getElementById('gate-upgrade-btn').addEventListener('click', () => {
+      window.app.showPaymentSheet();
+    });
+  }
+
+  showBottomSheet(content) {
+    let sheet = document.getElementById('feature-gate-sheet');
+    if (!sheet) {
+      sheet = document.createElement('div');
+      sheet.id = 'feature-gate-sheet';
+      sheet.className = 'modal-overlay';
+      document.body.appendChild(sheet);
+    }
+    
+    sheet.innerHTML = `<div class="sheet">${content}</div>`;
+    sheet.classList.remove('hidden');
+    
+    setTimeout(() => sheet.classList.add('open'), 10);
+    
+    sheet.addEventListener('click', (e) => {
+      if (e.target === sheet) {
+        this.closeSheet(sheet);
+      }
+    });
+  }
+
+  closeSheet(sheet) {
+    sheet.classList.remove('open');
+    setTimeout(() => sheet.classList.add('hidden'), 300);
+  }
+
+  getCurrentEquationCount() {
+    return window.app ? window.app.state.equations.length : 0;
+  }
+}
+```
+
+---
+
 > 文档版本: 1.0 | 最后更新: 2026-03-10
