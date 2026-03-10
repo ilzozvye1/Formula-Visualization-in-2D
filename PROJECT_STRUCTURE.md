@@ -12,7 +12,7 @@ Formula-Visualization-in-2D/
 │   ├── build/                  # 构建脚本
 │   ├── test/                   # 测试脚本
 │   ├── download-builds.ps1     # 下载 GitHub 构建的脚本
-│   └── DOWNLOAD_GUIDE.md       # 下载指南
+│   └── 下载指南.md              # 下载指南
 │
 ├── builds/                     # ⭐ GitHub 构建产物（自动下载）
 │   ├── 5_960b349/              # 构建 #5
@@ -74,7 +74,7 @@ builds/
 - `build/` - 项目构建脚本
 - `test/` - 测试脚本
 - `download-builds.ps1` - 下载 GitHub 构建
-- `DOWNLOAD_GUIDE.md` - 下载详细指南
+- `下载指南.md` - 下载详细指南
 
 ### 3. `.github/workflows/` - GitHub Actions
 

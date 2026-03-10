@@ -185,7 +185,7 @@ curl -H "Authorization: token ghp_xxx" https://api.github.com/repos/ilzozvye1/Fo
 ### 相关链接
 - **Actions**: https://github.com/ilzozvye1/Formula-Visualization-in-2D/actions
 - **Releases**: https://github.com/ilzozvye1/Formula-Visualization-in-2D/releases
-- **下载指南**: scripts/DOWNLOAD_GUIDE.md
+- 下载指南：scripts/下载指南.md
 
 ---
 
