@@ -8,8 +8,8 @@ param(
     [int]$KeepCount = 3
 )
 
-# Set output directory
-$BuildsDir = Join-Path $PSScriptRoot "builds"
+# Set output directory (moved to project root)
+$BuildsDir = Join-Path $PSScriptRoot "..\builds"
 if (!(Test-Path $BuildsDir)) {
     New-Item -ItemType Directory -Path $BuildsDir | Out-Null
     Write-Host "[OK] Created builds directory: $BuildsDir" -ForegroundColor Green

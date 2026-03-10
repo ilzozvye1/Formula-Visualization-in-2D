@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D 公式可视化 - UI 原型</title>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --surface: #ffffff;
+            --surface-secondary: #f8fafc;
+            --surface-tertiary: #f1f5f9;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --radius-sm: 4px;
+            --radius: 6px;
+            --radius-md: 8px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--surface-tertiary);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .platform-switcher {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .platform-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .platform-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .platform-btn:hover:not(.active) {
+            background: var(--surface-tertiary);
+        }
+
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        /* ==================== WEB UI ==================== */
+        .web-header {
+            height: 56px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .web-header-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .web-logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .web-logo span {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--surface-tertiary);
+            border-radius: var(--radius);
+            padding: 3px;
+        }
+
+        .view-toggle button {
+            padding: 6px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            transition: all 0.15s;
+        }
+
+        .view-toggle button.active {
+            background: var(--surface);
+            color: var(--text);
+            box-shadow: var(--shadow);
+        }
+
+        .web-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            font-size: 18px;
+        }
+
+        .icon-btn:hover {
+            background: var(--surface-tertiary);
+            color: var(--text);
+        }
+
+        .web-main {
+            display: flex;
+            margin-top: 56px;
+            height: calc(100vh - 56px);
+        }
+
+        .web-sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .preset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .preset-item {
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+
+        .preset-item:hover {
+            background: var(--surface-tertiary);
+            color: var(--text);
+        }
+
+        .preset-item .icon {
+            width: 16px;
+            text-align: center;
+        }
+
+        .formula-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-prefix {
+            background: var(--surface-tertiary);
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-right: none;
+            border-radius: var(--radius) 0 0 var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.15s;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .color-picker {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .select-field {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 13px;
+            background: var(--surface);
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .equation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .equation-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--surface-tertiary);
+            border-radius: var(--radius);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .equation-item:hover {
+            border-color: var(--border);
+        }
+
+        .equation-item.selected {
+            border-color: var(--primary);
+            background: rgba(14, 165, 233, 0.05);
+        }
+
+        .equation-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .equation-text {
+            flex: 1;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .equation-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+
+        .btn-sm:hover {
+            background: var(--surface-tertiary);
+            color: var(--text);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .web-canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface-secondary);
+        }
+
+        .canvas-toolbar {
+            height: 44px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 8px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .canvas-mock {
+            width: 100%;
+            max-width: 700px;
+            height: 450px;
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .canvas-grid {
+            width: 90%;
+            height: 85%;
+            background-image: 
+                linear-gradient(var(--border) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 30px 30px;
+            position: relative;
+        }
+
+        .canvas-axis {
+            position: absolute;
+            background: var(--text);
+        }
+
+        .canvas-axis.x {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            left: 0;
+        }
+
+        .canvas-axis.y {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+        }
+
+        .canvas-legend {
+            display: flex;
+            gap: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-bar {
+            height: 28px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .web-properties {
+            width: 260px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .properties-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .properties-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .property-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .property-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            font-size: 11px;
+            color: var(--text-muted);
+            width: 32px;
+            text-align: right;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* ==================== APP UI ==================== */
+        .app-layout {
+            padding-top: 60px;
+        }
+
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+        }
+
+        .app-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .app-menu-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: var(--radius);
+            font-size: 20px;
+            color: var(--text);
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .app-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-main {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .app-canvas-wrapper {
+            background: var(--surface);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+
+        .app-canvas {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-secondary);
+            position: relative;
+        }
+
+        .app-canvas-inner {
+            width: 90%;
+            height: 90%;
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .app-view-toggle {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        .app-view-toggle-inner {
+            display: flex;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 4px;
+            box-shadow: var(--shadow);
+        }
+
+        .app-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+        }
+
+        .app-sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 80px;
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            z-index: 90;
+            overflow-y: auto;
+        }
+
+        .app-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .app-sidebar-overlay {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 80px;
+            background: rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s;
+            z-index: 85;
+        }
+
+        .app-sidebar-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ==================== DESKTOP UI ==================== */
+        .desktop-menu-bar {
+            height: 32px;
+            background: var(--surface-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .menu-item {
+            padding: 4px 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            position: relative;
+        }
+
+        .menu-item:hover {
+            background: var(--surface-tertiary);
+            color: var(--text);
+        }
+
+        .desktop-toolbar {
+            height: 44px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            position: fixed;
+            top: 32px;
+            left: 0;
+            right: 0;
+            z-index: 99;
+        }
+
+        .toolbar-btn {
+            height: 32px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--surface-tertiary);
+            color: var(--text);
+        }
+
+        .toolbar-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .desktop-main {
+            display: flex;
+            margin-top: 76px;
+            height: calc(100vh - 76px - 28px);
+        }
+
+        .desktop-dock {
+            width: 52px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .dock-item {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .dock-item:hover {
+            background: var(--surface-tertiary);
+            color: var(--text);
+        }
+
+        .dock-item.active {
+            background: var(--surface-tertiary);
+            color: var(--primary);
+        }
+
+        .dock-tooltip {
+            position: absolute;
+            left: 48px;
+            background: var(--text);
+            color: white;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.15s;
+            z-index: 200;
+        }
+
+        .dock-item:hover .dock-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .desktop-canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--surface-secondary);
+        }
+
+        .desktop-status-bar {
+            height: 28px;
+            background: var(--surface-secondary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .desktop-properties {
+            width: 240px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 1024px) {
+            .web-properties {
+                display: none;
+            }
+            .desktop-properties {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .web-sidebar {
+                display: none;
+            }
+            .desktop-dock {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Platform Switcher -->
+    <div class="platform-switcher">
+        <button class="platform-btn active" onclick="switchPlatform('web')">Web</button>
+        <button class="platform-btn" onclick="switchPlatform('app')">App</button>
+        <button class="platform-btn" onclick="switchPlatform('desktop')">Desktop</button>
+    </div>
+
+    <!-- ==================== WEB UI ==================== -->
+    <div id="web" class="app-container active">
+        <header class="web-header">
+            <div class="web-header-left">
+                <div class="web-logo">FormulaViz <span>v1.0</span></div>
+                <div class="view-toggle">
+                    <button class="active">2D</button>
+                    <button>3D</button>
+                </div>
+            </div>
+            <div class="web-header-right">
+                <button class="icon-btn" title="深色模式">🌙</button>
+                <button class="icon-btn" title="设置">⚙️</button>
+                <button class="icon-btn" title="帮助">❓</button>
+            </div>
+        </header>
+
+        <main class="web-main">
+            <aside class="web-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">📁 预设公式</div>
+                    <div class="preset-list">
+                        <div class="preset-item"><span class="icon">▶</span> 一次方程</div>
+                        <div class="preset-item"><span class="icon">▶</span> 二次方程</div>
+                        <div class="preset-item"><span class="icon">▶</span> 三角函数</div>
+                        <div class="preset-item"><span class="icon">▶</span> 指数函数</div>
+                        <div class="preset-item"><span class="icon">▶</span> 对数函数</div>
+                        <div class="preset-item"><span class="icon">▶</span> 三维曲面</div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">📝 输入方程</div>
+                    <div class="formula-input-group">
+                        <div class="input-row">
+                            <span class="input-prefix">y =</span>
+                            <input type="text" class="input-field" value="sin(x)" placeholder="输入表达式">
+                        </div>
+                        <div class="input-row">
+                            <input type="color" class="color-picker" value="#ff4444">
+                            <select class="select-field">
+                                <option>实线</option>
+                                <option>虚线</option>
+                                <option>点线</option>
+                            </select>
+                            <button class="btn-primary">添加</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">📋 方程列表 (3)</div>
+                    <div class="equation-list">
+                        <div class="equation-item selected">
+                            <input type="checkbox" checked>
+                            <span class="equation-color" style="background: #ff4444"></span>
+                            <span class="equation-text">y = sin(x)</span>
+                            <div class="equation-actions">
+                                <button class="btn-sm">编辑</button>
+                                <button class="btn-sm">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="equation-item">
+                            <input type="checkbox" checked>
+                            <span class="equation-color" style="background: #4488ff"></span>
+                            <span class="equation-text">y = cos(x)</span>
+                            <div class="equation-actions">
+                                <button class="btn-sm">编辑</button>
+                                <button class="btn-sm">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="equation-item">
+                            <input type="checkbox">
+                            <span class="equation-color" style="background: #44ff44"></span>
+                            <span class="equation-text">y = tan(x)</span>
+                            <div class="equation-actions">
+                                <button class="btn-sm">编辑</button>
+                                <button class="btn-sm">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn-sm">全显</button>
+                        <button class="btn-sm">全隐</button>
+                        <button class="btn-sm">清空</button>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="web-canvas-area">
+                <div class="canvas-toolbar">
+                    <div class="toolbar-group">
+                        <button class="icon-btn">📷</button>
+                        <button class="icon-btn">📄</button>
+                        <button class="icon-btn">🔄</button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="btn-sm">-</button>
+                        <span style="font-size: 12px; min-width: 50px; text-align: center;">100%</span>
+                        <button class="btn-sm">+</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <div class="canvas-mock">
+                        <div class="canvas-grid">
+                            <div class="canvas-axis x"></div>
+                            <div class="canvas-axis y"></div>
+                        </div>
+                        <div class="canvas-legend">
+                            <span>🟢 y = sin(x)</span>
+                            <span>🔵 y = cos(x)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-bar">
+                    <span>✓ 就绪</span>
+                    <span>缩放: 100%</span>
+                    <span>坐标: (0.00, 0.00)</span>
+                    <span>方程: 3</span>
+                </div>
+            </section>
+
+            <aside class="web-properties">
+                <div class="properties-section">
+                    <div class="properties-title">方程属性</div>
+                    <div class="property-row">
+                        <span class="property-label">颜色</span>
+                        <input type="color" class="color-picker" value="#ff4444">
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">线宽</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="1" max="5" value="2">
+                            <span class="slider-value">2px</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="properties-section">
+                    <div class="properties-title">变换控制</div>
+                    <div class="property-row">
+                        <span class="property-label">平移 X</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="-10" max="10" value="0">
+                            <span class="slider-value">0</span>
+                        </div>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">平移 Y</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="-10" max="10" value="0">
+                            <span class="slider-value">0</span>
+                        </div>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">缩放</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="0.1" max="3" value="1" step="0.1">
+                            <span class="slider-value">1.0</span>
+                        </div>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">旋转</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="0" max="360" value="0">
+                            <span class="slider-value">0°</span>
+                        </div>
+                    </div>
+                    <button class="btn-sm" style="width: 100%; margin-top: 8px;">重置变换</button>
+                </div>
+
+                <div class="properties-section">
+                    <div class="properties-title">坐标轴设置</div>
+                    <div class="property-row">
+                        <span class="property-label">X 轴范围</span>
+                    </div>
+                    <div class="input-row" style="margin-bottom: 8px;">
+                        <input type="number" class="input-field" value="-10" style="padding: 4px 8px;">
+                        <span>~</span>
+                        <input type="number" class="input-field" value="10" style="padding: 4px 8px;">
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" class="checkbox" checked>
+                        <span class="property-label">显示网格</span>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" class="checkbox" checked>
+                        <span class="property-label">显示交点</span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- ==================== APP UI ==================== -->
+    <div id="app" class="app-container">
+        <header class="app-header">
+            <div class="app-header-left">
+                <button class="app-menu-btn" onclick="toggleAppSidebar()">☰</button>
+                <span class="app-title">FormulaViz</span>
+            </div>
+            <div class="app-header-right">
+                <button class="icon-btn">⚙️</button>
+                <button class="icon-btn">📤</button>
+            </div>
+        </header>
+
+        <div class="app-sidebar-overlay" onclick="toggleAppSidebar()"></div>
+        <aside class="app-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">预设分类</div>
+                <div class="preset-list">
+                    <div class="preset-item">一次方程</div>
+                    <div class="preset-item">二次方程</div>
+                    <div class="preset-item">三角函数</div>
+                    <div class="preset-item">指数/对数</div>
+                    <div class="preset-item">三维曲面</div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">方程列表</div>
+                <div class="equation-list">
+                    <div class="equation-item">
+                        <input type="checkbox" checked>
+                        <span class="equation-color" style="background: #ff4444"></span>
+                        <span class="equation-text">sin(x)</span>
+                    </div>
+                    <div class="equation-item">
+                        <input type="checkbox" checked>
+                        <span class="equation-color" style="background: #4488ff"></span>
+                        <span class="equation-text">cos(x)</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="app-layout">
+            <div class="app-main">
+                <div class="app-canvas-wrapper">
+                    <div class="app-canvas">
+                        <div class="app-canvas-inner">
+                            <div class="canvas-grid" style="width: 100%; height: 100%;">
+                                <div class="canvas-axis x"></div>
+                                <div class="canvas-axis y"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="app-view-toggle">
+                    <div class="app-view-toggle-inner">
+                        <button class="btn-sm" style="background: var(--primary); color: white;">2D</button>
+                        <button class="btn-sm">3D</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <nav class="app-nav">
+            <div class="nav-item" onclick="toggleAppSidebar()">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">方程</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📷</span>
+                <span class="nav-label">导出</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">➕</span>
+                <span class="nav-label">添加</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">设置</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- ==================== DESKTOP UI ==================== -->
+    <div id="desktop" class="app-container">
+        <div class="desktop-menu-bar">
+            <div class="menu-item">文件</div>
+            <div class="menu-item">编辑</div>
+            <div class="menu-item">视图</div>
+            <div class="menu-item">方程</div>
+            <div class="menu-item">工具</div>
+            <div class="menu-item">帮助</div>
+        </div>
+
+        <div class="desktop-toolbar">
+            <button class="toolbar-btn">📂 新建</button>
+            <button class="toolbar-btn">📂 打开</button>
+            <button class="toolbar-btn">💾 保存</button>
+            <div class="toolbar-divider"></div>
+            <div class="toolbar-group">
+                <button class="toolbar-btn active">2D</button>
+                <button class="toolbar-btn">3D</button>
+            </div>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-btn">📷 PNG</button>
+            <button class="toolbar-btn">📄 PDF</button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-btn">↩️ 撤销</button>
+            <button class="toolbar-btn">↪️ 重做</button>
+        </div>
+
+        <main class="desktop-main">
+            <aside class="desktop-dock">
+                <button class="dock-item active">
+                    📐
+                    <span class="dock-tooltip">工具</span>
+                </button>
+                <button class="dock-item">
+                    📊
+                    <span class="dock-tooltip">预设</span>
+                </button>
+                <button class="dock-item">
+                    🎨
+                    <span class="dock-tooltip">样式</span>
+                </button>
+                <button class="dock-item">
+                    🖼️
+                    <span class="dock-tooltip">图层</span>
+                </button>
+                <button class="dock-item">
+                    📁
+                    <span class="dock-tooltip">文件</span>
+                </button>
+                <button class="dock-item">
+                    📝
+                    <span class="dock-tooltip">历史</span>
+                </button>
+                <div style="flex: 1;"></div>
+                <button class="dock-item">
+                    ⚙️
+                    <span class="dock-tooltip">设置</span>
+                </button>
+            </aside>
+
+            <section class="desktop-canvas-area">
+                <div class="canvas-container" style="height: 100%;">
+                    <div class="canvas-mock" style="width: 90%; height: 90%; max-width: none;">
+                        <div class="canvas-grid" style="width: 95%; height: 90%;">
+                            <div class="canvas-axis x"></div>
+                            <div class="canvas-axis y"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="desktop-properties">
+                <div class="properties-section">
+                    <div class="properties-title">方程列表</div>
+                    <div class="equation-list">
+                        <div class="equation-item selected">
+                            <input type="checkbox" checked>
+                            <span class="equation-color" style="background: #ff4444"></span>
+                            <span class="equation-text">sin(x)</span>
+                            <button class="btn-sm">👁️</button>
+                        </div>
+                        <div class="equation-item">
+                            <input type="checkbox" checked>
+                            <span class="equation-color" style="background: #4488ff"></span>
+                            <span class="equation-text">cos(x)</span>
+                            <button class="btn-sm">👁️</button>
+                        </div>
+                        <button class="btn-sm" style="width: 100%; margin-top: 8px;">+ 添加</button>
+                    </div>
+                </div>
+
+                <div class="properties-section">
+                    <div class="properties-title">属性</div>
+                    <div class="property-row">
+                        <span class="property-label">颜色</span>
+                        <input type="color" class="color-picker" value="#ff4444">
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">线宽</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="1" max="5" value="2">
+                            <span class="slider-value">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="properties-section">
+                    <div class="properties-title">变换</div>
+                    <div class="property-row">
+                        <span class="property-label">X</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="-10" max="10" value="0">
+                            <span class="slider-value">0</span>
+                        </div>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">Y</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="-10" max="10" value="0">
+                            <span class="slider-value">0</span>
+                        </div>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">缩放</span>
+                        <div class="slider-container">
+                            <input type="range" class="slider" min="0.1" max="3" value="1" step="0.1">
+                            <span class="slider-value">1.0</span>
+                        </div>
+                    </div>
+                    <button class="btn-sm" style="width: 100%;">重置</button>
+                </div>
+
+                <div class="properties-section">
+                    <div class="properties-title">坐标轴</div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" class="checkbox" checked>
+                        <span class="property-label">显示网格</span>
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" class="checkbox" checked>
+                        <span class="property-label">显示交点</span>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <div class="desktop-status-bar">
+            <span>✓ 就绪</span>
+            <span>缩放: 100%</span>
+            <span>坐标: (0.00, 0.00)</span>
+            <span style="flex: 1;"></span>
+            <span>方程: 3</span>
+        </div>
+    </div>
+
+    <script>
+        function switchPlatform(platform) {
+            document.querySelectorAll('.platform-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.app-container').forEach(container => container.classList.remove('active'));
+            document.getElementById(platform).classList.add('active');
+        }
+
+        function toggleAppSidebar() {
+            document.querySelector('.app-sidebar').classList.toggle('open');
+            document.querySelector('.app-sidebar-overlay').classList.toggle('open');
+        }
+
+        // Equation item selection
+        document.querySelectorAll('.equation-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                this.classList.toggle('selected');
+            });
+        });
+
+        // View toggle in app
+        document.querySelectorAll('.app-view-toggle .btn-sm').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.app-view-toggle .btn-sm').forEach(b => {
+                    b.style.background = '';
+                    b.style.color = '';
+                });
+                this.style.background = 'var(--primary)';
+                this.style.color = 'white';
+            });
+        });
+    </script>
+</body>
+</html>

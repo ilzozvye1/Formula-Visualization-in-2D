@@ -24,7 +24,7 @@ if "%~1"=="" (
 echo 正在下载最新构建...
 echo.
 
-powershell -ExecutionPolicy Bypass -File "%~dp0download-builds.ps1" -Token "%~1"
+powershell -ExecutionPolicy Bypass -File "%~dp0scripts\download-builds.ps1" -Token "%~1"
 
 echo.
 echo ========================================
